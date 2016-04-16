@@ -65,10 +65,14 @@ typedef struct {
 } st_entity;
 
 typedef struct { 
-	//TODO(brett): make a scene to move stuff around faster
+	st_entity *entities;
+	int entity_count;
 } st_scene; 
 
 void CreateCollisionNodeSphere(st_collision_node *node, float radius, glm::vec3 position);
 void CreateCollisionNodeRectangle(st_collision_node *node, glm::vec3 origin, glm::vec3 size);
+
+void GetBoundingBox(st_entity *entity);
+void CheckCollision(st_entity *a, st_entity *b);
 
 #endif // __SHARED_HPP
