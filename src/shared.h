@@ -11,7 +11,13 @@ enum COLLISION_NODE_TYPE {
 
 typedef struct {
 
-} controller;
+} st_controller;
+
+typedef struct { 
+	glm::vec3 eye;
+	glm::vec3 lookat;
+	glm::vec3 up;
+} st_camera;
 
 struct st_sphere {
 	glm::vec3 position;
@@ -23,7 +29,7 @@ struct st_box {
 	glm::vec3 size;
 };
 
-struct collision_type {
+struct st_collision_type {
 	glm::vec3 origin;
 };
 
@@ -38,27 +44,31 @@ typedef struct{
 		glm::vec3 origin;
 		glm::vec3 size;
 	} box;
-} collision_node;
+} st_collision_node;
 
 typedef struct {
 	glm::vec3 position;
 	glm::vec3 color;
 	glm::vec2 st;
-} model_vertex;
+} st_model_vertex;
 
 typedef struct {	
-	model_vertex *vertices;
+	st_model_vertex *vertices;
 	int vertice_count;
 	int texture_id;
-} entity_model;
+} st_entity_model;
 
 typedef struct { 
 	glm::vec3 position;
-	collision_node collision;
-	entity_model model;
-} entity;
+	st_collision_node collision;
+	st_entity_model model;
+} st_entity;
 
-void CreateCollisionNodeSphere(collision_node *node, float radius, glm::vec3 position);
-void CreateCollisionNodeRectangle(collision_node *node, glm::vec3 origin, glm::vec3 size);
+typedef struct { 
+	//TODO(brett): make a scene to move stuff around faster
+} st_scene; 
+
+void CreateCollisionNodeSphere(st_collision_node *node, float radius, glm::vec3 position);
+void CreateCollisionNodeRectangle(st_collision_node *node, glm::vec3 origin, glm::vec3 size);
 
 #endif // __SHARED_HPP

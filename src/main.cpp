@@ -13,9 +13,14 @@
 #include <SDL2/SDL_opengl.h>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/ext.hpp>
 
 #define WINDOW_WIDTH 1200
 #define WINDOW_HEIGHT 800
+
+glm::mat4 PROJECTION;
+glm::mat4 VIEW;
 
 int main(int argc, char* argv[]) {
 
@@ -50,10 +55,14 @@ int main(int argc, char* argv[]) {
 
 	SDL_GL_SetSwapInterval(1);
 
+	//NOTE(brett): initialize game code
+
 	int num_joysticks = SDL_NumJoysticks();
 
 	if(num_joysticks > 0) {
-		SDL_JoystickOpen(0);
+		if(SDL_IsGameController(0)){
+			SDL_GameControllerOpen(0);
+		}
 	}
 
 	bool running = true;
@@ -67,7 +76,7 @@ int main(int argc, char* argv[]) {
 
 	std::cout << "Target Frame time: " <<  targetFrameTimeS << std::endl;
 
-	GLuint VAO, VBO;
+	GLuint VAO, VBO, shader;
 	glGenVertexArrays(1, &VAO);
 
 	glBindVertexArray(VAO);
@@ -75,45 +84,106 @@ int main(int argc, char* argv[]) {
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-	GLfloat triangle[] = {
-		-0.5f, -0.5f,  0.0f,
-		 0.5f, -0.5f,  0.0f,
-		 0.0f,  0.5f,  0.0f
+	GLfloat boxModel[] = {
+		// back
+		 0.5f,  0.5f, -0.5f,
+		 0.5f, -0.5f, -0.5f,
+		-0.5f,  0.5f, -0.5f,
+		-0.5f,  0.5f, -0.5f,
+		 0.5f, -0.5f, -0.5f,
+		-0.5f, -0.5f, -0.5f,
+
+		// right
+		 0.5f,  0.5f, -0.5f,
+		 0.5f, -0.5f, -0.5f,
+		 0.5f,  0.5f,  0.5f,
+		 0.5f,  0.5f,  0.5f,
+		 0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f,  0.5f,
+
+		 // front
+		-0.5f,  0.5f,  0.5f,
+		-0.5f, -0.5f,  0.5f,
+		 0.5f,  0.5f,  0.5f,
+		 0.5f,  0.5f,  0.5f,
+		-0.5f, -0.5f,  0.5f,
+		 0.5f, -0.5f,  0.5f,
+
+		 // left
+		-0.5f,  0.5f, -0.5f,
+		-0.5f, -0.5f, -0.5f,
+		-0.5f,  0.5f,  0.5f,
+		-0.5f,  0.5f,  0.5f,
+		-0.5f, -0.5f, -0.5f,
+		-0.5f, -0.5f,  0.5f,
+
+		// top
+		-0.5f,  0.5f, -0.5f,
+		-0.5f,  0.5f,  0.5f,
+		 0.5f,  0.5f, -0.5f,
+		 0.5f,  0.5f, -0.5f,
+		-0.5f,  0.5f,  0.5f,
+		 0.5f,  0.5f,  0.5f,
+
+		 // bottom
+		 0.5f, -0.5f,  0.5f,
+		 0.5f, -0.5f, -0.5f,
+		-0.5f, -0.5f,  0.5f,
+		-0.5f, -0.5f,  0.5f,
+		 0.5f, -0.5f, -0.5f,
+		-0.5f, -0.5f, -0.5f,
+
+
 	};
 
-	glBufferData(GL_ARRAY_BUFFER, sizeof(triangle), (GLfloat*)&triangle, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(boxModel), (GLfloat*)&boxModel, GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
 
-	// void glVertexAttribPointer(	GLuint index,
-	// 						 	GLint size,
-	// 						 	GLenum type,
-	// 						 	GLboolean normalized,
-	// 						 	GLsizei stride,
-	// 						 	const GLvoid * pointer);
-
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-	GLuint shader;
-
-
 
 	char *vertexShader, *fragmentShader;
 	ReadFile(&vertexShader, "shaders/flat_shader.vs");
 	ReadFile(&fragmentShader, "shaders/flat_shader.fs");
 
 	CreateShaderProgram(&shader, vertexShader, fragmentShader);
-
 	glUseProgram(shader);
+
+	// ortho (T const &left, T const &right, T const &bottom, T const &top, T const &zNear, T const &zFar)
+	PROJECTION = glm::ortho(-WINDOW_WIDTH/2.f,
+	                        WINDOW_WIDTH/2.f,
+	                        -WINDOW_HEIGHT/2.f,
+	                        WINDOW_HEIGHT/2.f,
+	                        0.1f,
+	                        1000.f);
+
+	// PROJECTION = glm::perspectiveFov(45.f,
+	//                                  (float)WINDOW_WIDTH,
+	//                                  (float)WINDOW_HEIGHT,
+	//                                  0.1f,
+	//                                  1000.f);
+
+	st_camera camera = {};
+	camera.eye       = { 0.f, 200.f, 200.f };
+	camera.lookat    = { 0.f, 0.f,  0.f };
+	camera.up        = { 0.f, 1.f,  0.f };
+
+	// lookAt (detail::tvec3< T > const &eye, detail::tvec3< T > const &center, detail::tvec3< T > const &up)
+	VIEW = glm::lookAt(camera.eye, camera.lookat, camera.up);
+
+	st_entity player = {};
+	float power = 0.f;
+	float powerChange = 100.f; // per second
+
+	glm::vec2 motion = {};
 
 	SDL_Event event;
 	while(running) {
 		int lastTime = currentTime;
 		currentTime = SDL_GetTicks();
 
-		int elapsedTimeMS = currentTime - lastTime;
+		float elapsedTimeMS = currentTime - lastTime;
 		float elapsedTimeS = elapsedTimeMS/1000.f;
 
-		// std::cout << "elapsed ms: " << elapsedTimeMS << " => " << elapsedTimeS << std::endl;
 		frameTime += elapsedTimeS;
 
 		if(frameTime >= targetFrameTimeS) {
@@ -121,31 +191,82 @@ int main(int argc, char* argv[]) {
 				switch(event.type) {
 					case SDL_JOYDEVICEADDED:
 						std::cout << "sdl device added: " << event.jdevice.which << std::endl;
-						SDL_JoystickOpen(0);
+						if(SDL_IsGameController(0)){
+							SDL_GameControllerOpen(0);
+						}
 						break;
 
-					case SDL_JOYAXISMOTION:
-						std::cout << "sdl joy axis event"  << std::endl;
-						break;
+					case SDL_CONTROLLERAXISMOTION: 
+					{
+						int axis = (int)event.jaxis.axis;
+						switch(axis){
+							case SDL_CONTROLLER_AXIS_LEFTX:
+								// TODO(brett): this needs to be fixed so we arent 'leaking' over 1 or below 0
+								motion.x = event.jaxis.value/(float)0x7FFF;
+								if(fabs(motion.x) < 0.2f) motion.x = 0.f;
+								break;
 
-					case SDL_JOYBUTTONDOWN:
-					case SDL_JOYBUTTONUP:
-						std::cout << "sdl joy button event"  << std::endl;
+							case SDL_CONTROLLER_AXIS_LEFTY:
+								motion.y = event.jaxis.value/(float)0x7FFF;
+
+								if(fabs(motion.y) < 0.2f) motion.y = 0.f;
+								break;
+						}
+						
 						break;
+					}
+					//https://wiki.libsdl.org/SDL_ControllerButtonEvent
+					case SDL_CONTROLLERBUTTONDOWN:
+					{
+						switch(event.cbutton.button) {
+							case SDL_CONTROLLER_BUTTON_A:
+							break;
+						}
+						break;
+					}
+					case SDL_CONTROLLERBUTTONUP:
+					{
+						switch(event.cbutton.button) {
+							case SDL_CONTROLLER_BUTTON_A:
+							break;
+						}
+						// SDL_Haptic *haptic = SDL_HapticOpen(0);
+						// SDL_HapticRumbleInit(haptic);
+						// SDL_HapticRumblePlay(haptic, 0.5f, 300);
+						// SDL_HapticClose(haptic);
+						// std::cout << "sdl joy button event"  << std::endl;
+						break;
+					}
 				}
 			}
-			
 
+			std::cout << "\rmotion: " << glm::to_string(motion) << "   FrameTime: " << frameTime;
 
-			glClearColor(1.0, 0.0, 1.0, 1.0);
+			player.position.x += motion.x * frameTime * 250.f;
+			player.position.z += motion.y * frameTime * 250.f;
+
+			glm::mat4 model = glm::mat4();
+			model = glm::translate(model, player.position);
+			model = glm::scale(model, glm::vec3{ 20.f, 20.f, 20.f });
+
+			glClearColor(0.3, 0.0, 0.3, 1.0);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			glDrawArrays(GL_TRIANGLES, 0, 3);
+			GLuint projectionLocation = glGetUniformLocation(shader, "projection");
+			GLuint viewLocation = glGetUniformLocation(shader, "view");
+			GLuint modelLocation = glGetUniformLocation(shader, "model");
+
+			glUniformMatrix4fv(projectionLocation, 1, false, (GLfloat*)&PROJECTION);
+			glUniformMatrix4fv(viewLocation, 1, false, (GLfloat*)&VIEW);
+			glUniformMatrix4fv(modelLocation, 1, false, (GLfloat*)&model);
+
+			glDrawArrays(GL_TRIANGLES, 0, 36);
 
 			SDL_GL_SwapWindow(mainWindow);
 
 			frameTime = frameTime - targetFrameTimeS;
 			if(frameTime > targetFrameTimeS) frameTime = targetFrameTimeS;
+
 		}
 	}
 
