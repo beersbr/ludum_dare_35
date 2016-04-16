@@ -84,7 +84,7 @@ int main(int argc, char* argv[]) {
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-	GLfloat boxModel[] = {
+	GLfloat boxVertices[] = {
 		// back
 		 0.5f,  0.5f, -0.5f,
 		 0.5f, -0.5f, -0.5f,
@@ -132,11 +132,9 @@ int main(int argc, char* argv[]) {
 		-0.5f, -0.5f,  0.5f,
 		 0.5f, -0.5f, -0.5f,
 		-0.5f, -0.5f, -0.5f,
-
-
 	};
 
-	glBufferData(GL_ARRAY_BUFFER, sizeof(boxModel), (GLfloat*)&boxModel, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(boxVertices), (GLfloat*)&boxVertices, GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
@@ -148,7 +146,6 @@ int main(int argc, char* argv[]) {
 	CreateShaderProgram(&shader, vertexShader, fragmentShader);
 	glUseProgram(shader);
 
-	// ortho (T const &left, T const &right, T const &bottom, T const &top, T const &zNear, T const &zFar)
 	PROJECTION = glm::ortho(-WINDOW_WIDTH/2.f,
 	                        WINDOW_WIDTH/2.f,
 	                        -WINDOW_HEIGHT/2.f,
@@ -163,17 +160,19 @@ int main(int argc, char* argv[]) {
 	//                                  1000.f);
 
 	st_camera camera = {};
-	camera.eye       = { 0.f, 200.f, 200.f };
+	camera.eye       = { 0.f, 300.f, 300.f };
 	camera.lookat    = { 0.f, 0.f,  0.f };
 	camera.up        = { 0.f, 1.f,  0.f };
 
-	// lookAt (detail::tvec3< T > const &eye, detail::tvec3< T > const &center, detail::tvec3< T > const &up)
-	VIEW = glm::lookAt(camera.eye, camera.lookat, camera.up);
-
+	st_entity_model boxModel = {};
+	CreateModel(&boxModel, boxVertices, glm::vec3{0.f, 0.5f, 1.0f}, shader);
 	st_entity player = {};
+	player.model = &boxModel;
+
 	float power = 0.f;
 	float powerChange = 100.f; // per second
 
+	glm::vec3 cameraMotion = {};
 	glm::vec2 motion = {};
 
 	SDL_Event event;
@@ -242,8 +241,18 @@ int main(int argc, char* argv[]) {
 
 			std::cout << "\rmotion: " << glm::to_string(motion) << "   FrameTime: " << frameTime;
 
+			cameraMotion.x = player.position.x - camera.lookat.x;
+			cameraMotion.z = player.position.z - camera.lookat.z;
+
+			cameraMotion /= 10.f;
+
+			camera.lookat += cameraMotion;
+			camera.eye += cameraMotion;
+
 			player.position.x += motion.x * frameTime * 250.f;
 			player.position.z += motion.y * frameTime * 250.f;
+
+			VIEW = glm::lookAt(camera.eye, camera.lookat, camera.up);
 
 			glm::mat4 model = glm::mat4();
 			model = glm::translate(model, player.position);
@@ -266,7 +275,6 @@ int main(int argc, char* argv[]) {
 
 			frameTime = frameTime - targetFrameTimeS;
 			if(frameTime > targetFrameTimeS) frameTime = targetFrameTimeS;
-
 		}
 	}
 
