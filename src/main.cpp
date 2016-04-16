@@ -1,4 +1,7 @@
 
+#include "shared.h"
+#include "shared.cpp"
+
 #include "hogl.h"
 #include "hogl.cpp"
 
@@ -13,10 +16,6 @@
 
 #define WINDOW_WIDTH 1200
 #define WINDOW_HEIGHT 800
-
-typedef struct {
-
-} controller;
 
 int main(int argc, char* argv[]) {
 
@@ -91,11 +90,12 @@ int main(int argc, char* argv[]) {
 	// 						 	GLboolean normalized,
 	// 						 	GLsizei stride,
 	// 						 	const GLvoid * pointer);
- 
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	GLuint shader;
+
+
 
 	char *vertexShader, *fragmentShader;
 	ReadFile(&vertexShader, "shaders/flat_shader.vs");
@@ -134,8 +134,9 @@ int main(int argc, char* argv[]) {
 						break;
 				}
 			}
-
 			
+
+
 			glClearColor(1.0, 0.0, 1.0, 1.0);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

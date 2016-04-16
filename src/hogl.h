@@ -11,7 +11,6 @@
 #include <fstream>
 #include <assert.h>
 
-
 void ReadFile(char **fileContents, char *filename);
 void CompileShader(GLuint *shader, char *shaderSource);
 void CreateShaderProgram(GLuint *shaderProgram, char *vertexShader, char *fragmentShader);
