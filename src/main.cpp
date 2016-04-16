@@ -21,6 +21,7 @@
 
 glm::mat4 PROJECTION;
 glm::mat4 VIEW;
+glm::vec3 LIGHT_POSITION;
 
 int main(int argc, char* argv[]) {
 
@@ -57,8 +58,8 @@ int main(int argc, char* argv[]) {
 
 	//NOTE(brett): initialize game code
 
-	int num_joysticks = SDL_NumJoysticks();
 
+	int num_joysticks = SDL_NumJoysticks();
 	if(num_joysticks > 0) {
 		if(SDL_IsGameController(0)){
 			SDL_GameControllerOpen(0);
@@ -73,76 +74,13 @@ int main(int argc, char* argv[]) {
 	float targetFrameTimeS = 1.0f/targetFPS;
 
 	float frameTime = targetFrameTimeS;
-
 	std::cout << "Target Frame time: " <<  targetFrameTimeS << std::endl;
-
-	GLuint VAO, VBO, shader;
-	glGenVertexArrays(1, &VAO);
-
-	glBindVertexArray(VAO);
-
-	glGenBuffers(1, &VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
-	GLfloat boxVertices[] = {
-		// back
-		 0.5f,  0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		-0.5f,  0.5f, -0.5f,
-		-0.5f,  0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		-0.5f, -0.5f, -0.5f,
-
-		// right
-		 0.5f,  0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f,  0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f,  0.5f,
-
-		 // front
-		-0.5f,  0.5f,  0.5f,
-		-0.5f, -0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-		-0.5f, -0.5f,  0.5f,
-		 0.5f, -0.5f,  0.5f,
-
-		 // left
-		-0.5f,  0.5f, -0.5f,
-		-0.5f, -0.5f, -0.5f,
-		-0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f,  0.5f,
-		-0.5f, -0.5f, -0.5f,
-		-0.5f, -0.5f,  0.5f,
-
-		// top
-		-0.5f,  0.5f, -0.5f,
-		-0.5f,  0.5f,  0.5f,
-		 0.5f,  0.5f, -0.5f,
-		 0.5f,  0.5f, -0.5f,
-		-0.5f,  0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-
-		 // bottom
-		 0.5f, -0.5f,  0.5f,
-		 0.5f, -0.5f, -0.5f,
-		-0.5f, -0.5f,  0.5f,
-		-0.5f, -0.5f,  0.5f,
-		 0.5f, -0.5f, -0.5f,
-		-0.5f, -0.5f, -0.5f,
-	};
-
-	glBufferData(GL_ARRAY_BUFFER, sizeof(boxVertices), (GLfloat*)&boxVertices, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(0);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	char *vertexShader, *fragmentShader;
 	ReadFile(&vertexShader, "shaders/flat_shader.vs");
 	ReadFile(&fragmentShader, "shaders/flat_shader.fs");
 
+	GLuint shader;
 	CreateShaderProgram(&shader, vertexShader, fragmentShader);
 	glUseProgram(shader);
 
@@ -164,8 +102,11 @@ int main(int argc, char* argv[]) {
 	camera.lookat    = { 0.f, 0.f,  0.f };
 	camera.up        = { 0.f, 1.f,  0.f };
 
+	VIEW = glm::lookAt(camera.eye, camera.lookat, camera.up);
+
 	st_entity_model boxModel = {};
-	CreateModel(&boxModel, boxVertices, glm::vec3{0.f, 0.5f, 1.0f}, shader);
+	std::cout << sizeof(BOX_VERTICES)/sizeof(GLfloat) << std::endl;
+	CreateModel(&boxModel, BOX_VERTICES, sizeof(BOX_VERTICES)/sizeof(GLfloat), glm::vec3{0.f, 0.5f, 1.0f}, shader);
 	st_entity player = {};
 	player.model = &boxModel;
 
@@ -239,7 +180,7 @@ int main(int argc, char* argv[]) {
 				}
 			}
 
-			std::cout << "\rmotion: " << glm::to_string(motion) << "   FrameTime: " << frameTime;
+			std::cout << "\rpos: " << glm::to_string(player.position) << "  motion: " << glm::to_string(motion) << "   FrameTime: " << frameTime;
 
 			cameraMotion.x = player.position.x - camera.lookat.x;
 			cameraMotion.z = player.position.z - camera.lookat.z;
@@ -252,24 +193,15 @@ int main(int argc, char* argv[]) {
 			player.position.x += motion.x * frameTime * 250.f;
 			player.position.z += motion.y * frameTime * 250.f;
 
+			LIGHT_POSITION = glm::vec3{ 0.f, 40.f, 0.f };
 			VIEW = glm::lookAt(camera.eye, camera.lookat, camera.up);
 
-			glm::mat4 model = glm::mat4();
-			model = glm::translate(model, player.position);
-			model = glm::scale(model, glm::vec3{ 20.f, 20.f, 20.f });
+			// std::cout << "\rcamera position " << glm::to_string(LIGHT_POSITION) << std::endl;
 
 			glClearColor(0.3, 0.0, 0.3, 1.0);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			GLuint projectionLocation = glGetUniformLocation(shader, "projection");
-			GLuint viewLocation = glGetUniformLocation(shader, "view");
-			GLuint modelLocation = glGetUniformLocation(shader, "model");
-
-			glUniformMatrix4fv(projectionLocation, 1, false, (GLfloat*)&PROJECTION);
-			glUniformMatrix4fv(viewLocation, 1, false, (GLfloat*)&VIEW);
-			glUniformMatrix4fv(modelLocation, 1, false, (GLfloat*)&model);
-
-			glDrawArrays(GL_TRIANGLES, 0, 36);
+			DrawEntity(&player, PROJECTION, VIEW, LIGHT_POSITION);
 
 			SDL_GL_SwapWindow(mainWindow);
 
