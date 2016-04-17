@@ -15,10 +15,11 @@
 // NOTE(brett): should be done with triangles
 void CreateModel(st_entity_model *model, GLfloat *vertices, int vertices_size, glm::vec3 color1, GLuint shader_id) {
 
+	// NOTE(brett): get vertices 
 	int model_vertex_count = vertices_size/3;
-	model->vertices = (st_model_vertex*)malloc(sizeof(st_model_vertex)*model_vertex_count);
-	model->draw_method = GL_TRIANGLES;
 
+	model->vertices = (st_model_vertex*)malloc(sizeof(st_model_vertex)*model_vertex_count);
+	// model->draw_method = GL_TRIANGLES;
 
 	if(model->draw_method == GL_TRIANGLES) {
 		for(int i = 0; i < vertices_size; i += 9) {
@@ -46,6 +47,15 @@ void CreateModel(st_entity_model *model, GLfloat *vertices, int vertices_size, g
 												   glm::vec2{} };
 
 		}		
+	}
+	else if(model->draw_method == GL_LINES) {
+		for(int i = 0; i < vertices_size; i+= 3) {
+			int vi = i/3;
+
+			glm::vec3 point = glm::vec3{ vertices[i], vertices[i+1], vertices[i+2] };
+			model->vertices[vi] = st_model_vertex{ point, glm::vec3{0.f, 1.f, 0.f}, color1, glm::vec2 {} };
+
+		}
 	}
 
 
@@ -86,7 +96,7 @@ void DrawEntity(st_entity *entity, glm::mat4 projection, glm::mat4 view,  glm::v
 
 	glm::mat4 model = glm::mat4();
 	model = glm::translate(model, entity->position);
-	model = glm::scale(model, glm::vec3{ 20.f, 20.f, 20.f });
+	model = glm::scale(model, entity->scale);
 
 	GLint modelLocation = glGetUniformLocation(entity->model->shader_id, "model");
 	glUniformMatrix4fv(modelLocation, 1, false, (GLfloat*)&model);
