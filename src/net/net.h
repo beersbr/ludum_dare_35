@@ -10,7 +10,8 @@
 
 #endif
 
-enum GAME_STATES {STARTED, STOPPED};
+enum GAME_STATES {STARTED=1, STOPPED};
+enum STATUS_MESSAGE { JOIN_OK=1, JOIN_FAIL};
 
 typedef struct entity_list
 {
@@ -25,12 +26,19 @@ typedef struct entity_update
 	void* update_data; //This might have to be more defined later. but probably a position and orientation vector
 } EntityUpdate;
 
+typedef struct status_packet
+{
+	//Could be more stuff here
+	STATUS_MESSAGE status_msg;
+} StatusPacket;
+
 typedef struct game_state
 {
 	//Maintains list of entities and tick count.
 	GAME_STATES curState;
 	unsigned int serverTicks;
 	EntityList ents;
+	int clientCount;
 	SOCKET clients[MAXCLIENTS_PER_GAME];
 
 } GameState;

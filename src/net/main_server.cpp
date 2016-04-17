@@ -18,18 +18,21 @@ int test_handle_client(SOCKET c_in)
 void start_game()
 {
 	//Initialize game state for clients
+	return;
 
 }
 
 int update_client(SOCKET c_in)
 {
 	//Update game state with client packet
+	return 1;
 
 }
 
 int send_client_update(SOCKET c_in)
 {
 	//Send client updated status based on game
+	return 1;
 
 }
 
@@ -40,6 +43,29 @@ int init_client_send(SOCKET c_in)
 	return send(c_in, message, strlen(message), 0);
 }
 
+int remove_client_from_game(SOCKET c_in, GameState* gameList)
+{
+	//Look for game this client is a part of, and RIP THEM OUT
+	//Also, send update packet to clients that says "Hey, this guy isn't in your game anymore"
+	for(int i = 0; i < MAIN_SRV_MAXGAMES; i++)
+	{
+		for(int j = 0; j < MAXCLIENTS_PER_GAME; j++)
+		{
+			if(gameList[i].clients[j] == c_in)
+			{
+				//We found it, remove it from the list
+				// (set to zero)
+				std::cout << "Removed client from game " << i << std::endl;
+				gameList[i].clients[j] = 0;
+				gameList[i].clientCount--;
+				return 1;
+			}
+		}
+	}
+	std::cout << "Didn't find client in any games!" << std::endl;
+
+}
+
 int join_client_to_game(SOCKET c_in, GameState* gameList)
 {
 	//Find first available game
@@ -47,9 +73,17 @@ int join_client_to_game(SOCKET c_in, GameState* gameList)
 	// - Not Started
 	// - Not full
 	//Iterate over games and get first game
+	int res, addr_size;
+	StatusPacket status;
+	struct sockaddr_in address;
+
+	res = getpeername(c_in, (sockaddr*)&address, &addr_size);
+
+	std::cout << "Joining Client To Game" << std::endl << "fd: " << c_in << " ip: " << inet_ntoa(address.sin_addr) << " port: " << ntohs(address.sin_port) << std::endl;
+	
 	for(int i = 0; i < MAIN_SRV_MAXGAMES; i++)
 	{
-		if(gameList[i].curState == STOPPED)
+		if((gameList[i].clientCount < MAXCLIENTS_PER_GAME) && (gameList[i].curState == STOPPED))
 		{
 			//Use this game
 			//make sure it's initialized.			
@@ -57,12 +91,21 @@ int join_client_to_game(SOCKET c_in, GameState* gameList)
 			{
 				if(!gameList[i].clients[j])
 				{
+					std::cout << "Successfully Joined client to game " << i << std::endl;
 					gameList[i].clients[j] = c_in;
+					gameList[i].clientCount++;
+					//Send success message to client
+					status.status_msg = JOIN_OK;
+					res = send(c_in, (char*)&status, sizeof(StatusPacket), 0);
+					return 1;
 				}
 			}
 		}
 	}
-
+	//Couldn't find a good game
+	status.status_msg = JOIN_FAIL;
+	res = send(c_in, (char*)&status, sizeof(StatusPacket), 0);
+	return 0;
 }
 
 #ifdef _WIN32
@@ -111,7 +154,7 @@ void init_game_server(int portnum, SOCKET* master_in)
 	return;
 }
 
-int handle_client_event(SOCKET client_socket)
+int handle_client_event(SOCKET client_socket, GameState* games)
 {
 	//Call a fucntion based on what the client is recieved and who the client is.
 	char *buffer;
@@ -139,6 +182,7 @@ int handle_client_event(SOCKET client_socket)
 	{
 		//Disconect
 		std::cout << "Host disconnected: no data" << std::endl;
+		remove_client_from_game(client_socket, games);
 		closesocket(client_socket);
 	}
 	else
@@ -182,6 +226,7 @@ int main(int argc, char* argv[])
 	{
 		currentGames[i].curState = STOPPED;
 		currentGames[i].serverTicks = 0;
+		currentGames[i].clientCount = 0;
 		for(int j = 0; j < MAXCLIENTS_PER_GAME; j++)
 		{
 			currentGames[i].clients[j] = 0;
@@ -234,7 +279,7 @@ int main(int argc, char* argv[])
 			//Send init message
 			//This should join the client with the first available game instance
 			//res = init_client_send(new_socket);
-			res = join_client_to_game(new_socket);
+			res = join_client_to_game(new_socket, currentGames);
 
 			//add new connection
 			for(int i = 0; i < max_clients; i++)
@@ -254,7 +299,7 @@ int main(int argc, char* argv[])
 			s = client_sockets[i];
 			if(FD_ISSET(s, &readfds))
 			{				
-				res = handle_client_event(s);
+				res = handle_client_event(s, currentGames);
 				if(!res || res < 0)
 				{
 					//Disconnection from handler, lets set the client socket to zero.
