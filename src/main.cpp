@@ -16,8 +16,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/ext.hpp>
 
-#define WINDOW_WIDTH 1200
-#define WINDOW_HEIGHT 800
+#define WINDOW_WIDTH 800
+#define WINDOW_HEIGHT 600
 
 glm::mat4 PROJECTION;
 glm::mat4 VIEW;
@@ -45,9 +45,7 @@ int main(int argc, char* argv[]) {
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-
 	SDL_GLContext mainContext = SDL_GL_CreateContext(mainWindow);
-
 	GLenum err = glewInit();
 
 	if(!mainContext){
@@ -55,6 +53,10 @@ int main(int argc, char* argv[]) {
 	}
 
 	SDL_GL_SetSwapInterval(1);
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+
 
 	//NOTE(brett): initialize game code
 	int num_joysticks = SDL_NumJoysticks();
@@ -102,27 +104,48 @@ int main(int argc, char* argv[]) {
 
 	VIEW = glm::lookAt(camera.eye, camera.lookat, camera.up);
 
+
+	st_scene scene;
+
+	// load models
 	st_entity_model gridModel = {};	
 	gridModel.draw_method = GL_LINES;
 	CreateModel(&gridModel, GRID_VERTICES_5, sizeof(GRID_VERTICES_5)/sizeof(GLfloat), glm::vec3{1.f, 1.f, 1.f}, shader);
-	st_entity grid = {};
-	grid.model = &gridModel;
-	grid.scale = glm::vec3{40.f, 40.f, 40.f};
 
 	st_entity_model boxModel = {};
 	boxModel.draw_method = GL_TRIANGLES;
 	CreateModel(&boxModel, BOX_VERTICES, sizeof(BOX_VERTICES)/sizeof(GLfloat), glm::vec3{0.f, 0.5f, 1.0f}, shader);
-	st_entity player = {};
-	player.model = &boxModel;
-	player.scale = glm::vec3{20.f, 20.f, 20.f};
 
-	float power = 0.f;
+	st_entity_model boxModelOrange = {};
+	boxModelOrange.draw_method = GL_TRIANGLES;
+	CreateModel(&boxModelOrange, BOX_VERTICES, sizeof(BOX_VERTICES)/sizeof(GLfloat), glm::vec3{1.f, 0.5f, 0.0f}, shader);
+
+	// create entities
+
+	st_entity wallBottom = {};
+	wallBottom.model     = &boxModelOrange;
+	wallBottom.scale     = glm::vec3{160.f, 10.f, 10.f};
+	wallBottom.position  = glm::vec3{0.f, 5.f, 80.f};
+
+	st_entity wallTop = {};
+	wallTop.model     = &boxModelOrange;
+	wallTop.scale     = glm::vec3{160.f, 10.f, 10.f};
+	wallTop.position  = glm::vec3{0.f, 5.f, -80.f};
+
+	st_entity grid = {};
+	grid.model     = &gridModel;
+	grid.scale     = glm::vec3{40.f, 40.f, 40.f};
+	
+	st_entity player = {};
+	player.model     = &boxModel;
+	player.scale     = glm::vec3{20.f, 20.f, 20.f};
+	player.position  = glm::vec3{0.f, 10.f, 0.f};
+
+	float power       = 0.f;
 	float powerChange = 100.f; // per second
 
 	glm::vec3 cameraMotion = {};
-	glm::vec2 motion = {};
-
-	st_scene scene;
+	glm::vec2 motion       = {};
 
 	SDL_Event event;
 	while(running) {
@@ -210,6 +233,8 @@ int main(int argc, char* argv[]) {
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			DrawEntity(&grid, PROJECTION, VIEW, LIGHT_POSITION);
+			DrawEntity(&wallTop, PROJECTION, VIEW, LIGHT_POSITION);
+			DrawEntity(&wallBottom, PROJECTION, VIEW, LIGHT_POSITION);
 			DrawEntity(&player, PROJECTION, VIEW, LIGHT_POSITION);
 
 			SDL_GL_SwapWindow(mainWindow);

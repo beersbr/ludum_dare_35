@@ -15,9 +15,9 @@ out vec3 f_color;
 void main()
 {
 	vec3 lightPosition = vec3((model * vec4(position, 1.0)).xyz) - light;
-	vec3 normalPosition = vec3((model * vec4(normal, 1.0)).xyz);
+	vec3 normalPosition = (transpose(inverse(mat4(model))) * vec4(normal, 0.0)).xyz;
 
-	float weight = dot(normalize(lightPosition), normalize(normal));
+	float weight = dot(normalize(lightPosition), normalize(normalPosition));
 	weight = max(weight, 0.0);
 	f_color =  weight * color;
 
