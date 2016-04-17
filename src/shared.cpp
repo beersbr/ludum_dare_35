@@ -231,7 +231,7 @@ void AddToScene(st_scene *scene, st_entity *entity) {
 
 // this is mostly just collision and rendering
 void UpdateAndRenderScene(st_scene *scene, glm::mat4 projection, glm::mat4 view) {
-	glm::vec3 light_pos = glm::vec3{0.f, 40.f, 0.f};
+	glm::vec3 light_pos = glm::vec3{0.f, 140.f, 0.f};
 
 	for(int i = 0; i < scene->entity_count; i++) {
 
