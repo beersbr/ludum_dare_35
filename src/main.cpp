@@ -134,13 +134,6 @@ int main(int argc, char* argv[]) {
 	wallTop.position  = glm::vec3{0.f, 5.f, -80.f};
 	CreateCollisionLine(&wallTop, false, glm::vec3{-80.f, 0.f, -80.f}, glm::vec3{80.f, 0.f, -80.f});
 
-	st_entity wallLeft = {};
-	wallLeft.model     = &boxModelOrange;
-	wallLeft.scale     = glm::vec3{160.f, 10.f, 10.f};
-	wallLeft.position  = glm::vec3{-80.f, 5.f, -160.f};
-	wallLeft.rotation = glm::vec3{0.f, Radians(90.f), 0.f};
-	CreateCollisionLine(&wallLeft, false, glm::vec3{-80.f, 0.f, -80.f}, glm::vec3{-80.f, 0.f, -240.f});
-
 	st_entity grid = {};
 	grid.model     = &gridModel;
 	grid.scale     = glm::vec3{40.f, 40.f, 40.f};
@@ -151,16 +144,33 @@ int main(int argc, char* argv[]) {
 	player.position  = glm::vec3{0.f, 10.f, 0.f};
 	CreateCollisionSphere(&player, true, 10.f, glm::vec3{});
 
-	st_entity wallRight = {};
+	st_entity wallRight = {} ;
 	CreateWall(&wallRight, &boxModelOrange, true, glm::vec3{80.f, 0.f, 80.f}, glm::vec3{80.f, 0.f, -80.f});
-
-
+	
 	st_scene scene;
 	PrepareScene(&scene, 1024);
+
+	st_entity entities[1024];
+	int entity_count = 0;
+
+	CreateWall(&entities[entity_count], &boxModelOrange, true, glm::vec3{-80.f, 0.f, 80.f}, glm::vec3{-80.f, 0.f, 560.f}); 
+	AddToScene(&scene, &entities[entity_count++]);
+
+	CreateWall(&entities[entity_count], &boxModelOrange, true, glm::vec3{-80.f, 0.f, -80.f}, glm::vec3{-80.f, 0.f, -560.f}); 
+	AddToScene(&scene, &entities[entity_count++]);
+
+	CreateWall(&entities[entity_count], &boxModelOrange, true, glm::vec3{-80.f, 0.f, -560.f}, glm::vec3{-80.f, 0.f, -80.f}); 
+	AddToScene(&scene, &entities[entity_count++]);
+
+	CreateWall(&entities[entity_count], &boxModelOrange, true, glm::vec3{-880.f, 0.f, -560.f}, glm::vec3{-80.f, 0.f, -560.f}); 
+	AddToScene(&scene, &entities[entity_count++]);
+
+	CreateWall(&entities[entity_count], &boxModelOrange, true, glm::vec3{-80.f, 0.f, -560.f}, glm::vec3{-80.f, 0.f, -80.f}); 
+	AddToScene(&scene, &entities[entity_count++]);
+
 	AddToScene(&scene, &wallRight);
 	AddToScene(&scene, &wallBottom);
 	AddToScene(&scene, &wallTop);
-	AddToScene(&scene, &wallLeft);
 	AddToScene(&scene, &grid);
 	AddToScene(&scene, &player);
 
