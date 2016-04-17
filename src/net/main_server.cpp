@@ -2,11 +2,6 @@
 #include <thread>
 #include "net.h"
 
-#define MAIN_SRV_MAXRECV 1024
-#define MAIN_SRV_MAXCLIENTS 28
-#define MAIN_SRV_MAXGAMES 7
-#define MAIN_SRV_DEFAULT_PORTNUM 21825
-
 typedef int (*handle_callback)(void*, SOCKET);
 
 int test_handle_client(SOCKET c_in)

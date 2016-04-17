@@ -5,6 +5,9 @@
 #include "hogl.h"
 #include "hogl.cpp"
 
+#include "net/net.h"
+#include "net/net.cpp"
+
 #include "game_level.h"
 #include "game_level.cpp"
 
@@ -28,6 +31,8 @@ glm::vec3 LIGHT_POSITION;
 
 int main(int argc, char* argv[]) {
 
+	EntityList* playerEntities = (EntityList*)malloc(sizeof(EntityList) * MAXCLIENTS_PER_GAME);
+
 	if(SDL_Init(SDL_INIT_EVERYTHING) < 0)
 	{
 		std::cout << "SOMETHING WENT WRONG!!!" << std::endl;
@@ -43,6 +48,11 @@ int main(int argc, char* argv[]) {
 	if(!mainWindow) {
 		std::cout << "Could not create window" << std::endl;
 	}
+
+
+	//Init winsock
+	init_game_winsock();
+
 
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -144,7 +154,17 @@ int main(int argc, char* argv[]) {
 	st_entity grid = {};
 	grid.model     = &gridModel;
 	grid.scale     = glm::vec3{40.f, 40.f, 40.f};
-	
+
+	//Get player entities from server
+	int join_status = JoinGame(playerEntities);
+	if(!join_status)
+	{
+		//Couldn't join a game, we can control what we want here, but quit for now
+		std::cout << "Netcode error from JoinGame: Couldn't join a game" << std::endl;
+		return 1;
+	}
+	//Set up our player entities from the list.
+
 	st_entity player = {};
 	player.model     = &boxModel;
 	player.scale     = glm::vec3{20.f, 20.f, 20.f};
