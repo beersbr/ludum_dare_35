@@ -5,6 +5,9 @@
 #include "hogl.h"
 #include "hogl.cpp"
 
+#include "game_level.h"
+#include "game_level.cpp"
+
 #include <iostream>
 
 #include <GL/glew.h>
@@ -147,6 +150,8 @@ int main(int argc, char* argv[]) {
 	player.scale     = glm::vec3{20.f, 20.f, 20.f};
 	player.position  = glm::vec3{0.f, 10.f, 0.f};
 	CreateCollisionSphere(&player, true, 10.f, glm::vec3{});
+
+	CreateWall(0, false);
 
 	st_scene scene;
 	PrepareScene(&scene, 1024);
