@@ -164,12 +164,14 @@ int handle_client_event(SOCKET client_socket, GameState* games)
 		{
 			//Disconnect
 			std::cout << "Host disconnected: connection reset" << std::endl;
+			remove_client_from_game(client_socket, games);
 			closesocket(client_socket);
 			return 0;
 		}
 		else
 		{
 			std::cout << "recv failed with error code " << error_code << std::endl;
+			remove_client_from_game(client_socket, games);
 			return -1;
 		}			
 	}
