@@ -104,9 +104,6 @@ int main(int argc, char* argv[]) {
 
 	VIEW = glm::lookAt(camera.eye, camera.lookat, camera.up);
 
-
-	st_scene scene;
-
 	// load models
 	st_entity_model gridModel = {};	
 	gridModel.draw_method = GL_LINES;
@@ -126,11 +123,13 @@ int main(int argc, char* argv[]) {
 	wallBottom.model     = &boxModelOrange;
 	wallBottom.scale     = glm::vec3{160.f, 10.f, 10.f};
 	wallBottom.position  = glm::vec3{0.f, 5.f, 80.f};
+	CreateCollisionLine(&wallBottom, false, glm::vec3{-80.f, 0.f, 80.f}, glm::vec3{80.f, 0.f, 80.f});
 
 	st_entity wallTop = {};
 	wallTop.model     = &boxModelOrange;
 	wallTop.scale     = glm::vec3{160.f, 10.f, 10.f};
 	wallTop.position  = glm::vec3{0.f, 5.f, -80.f};
+	CreateCollisionLine(&wallTop, false, glm::vec3{-80.f, 0.f, -80.f}, glm::vec3{80.f, 0.f, -80.f});
 
 	st_entity grid = {};
 	grid.model     = &gridModel;
@@ -140,12 +139,20 @@ int main(int argc, char* argv[]) {
 	player.model     = &boxModel;
 	player.scale     = glm::vec3{20.f, 20.f, 20.f};
 	player.position  = glm::vec3{0.f, 10.f, 0.f};
+	CreateCollisionSphere(&player, true, 10.f, glm::vec3{});
 
 	float power       = 0.f;
 	float powerChange = 100.f; // per second
 
 	glm::vec3 cameraMotion = {};
 	glm::vec2 motion       = {};
+
+	st_scene scene;
+	PrepareScene(&scene, 1024);
+	AddToScene(&scene, &wallBottom);
+	AddToScene(&scene, &wallTop);
+	AddToScene(&scene, &grid);
+	AddToScene(&scene, &player);
 
 	SDL_Event event;
 	while(running) {
@@ -213,6 +220,7 @@ int main(int argc, char* argv[]) {
 
 			std::cout << "\rpos: " << glm::to_string(player.position) << "  motion: " << glm::to_string(motion) << "   FrameTime: " << frameTime;
 
+			// this needs to be in the scene update
 			cameraMotion.x = player.position.x - camera.lookat.x;
 			cameraMotion.z = player.position.z - camera.lookat.z;
 
@@ -232,10 +240,12 @@ int main(int argc, char* argv[]) {
 			glClearColor(0.3, 0.0, 0.3, 1.0);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			DrawEntity(&grid, PROJECTION, VIEW, LIGHT_POSITION);
-			DrawEntity(&wallTop, PROJECTION, VIEW, LIGHT_POSITION);
-			DrawEntity(&wallBottom, PROJECTION, VIEW, LIGHT_POSITION);
-			DrawEntity(&player, PROJECTION, VIEW, LIGHT_POSITION);
+			// DrawEntity(&grid, PROJECTION, VIEW, LIGHT_POSITION);
+			// DrawEntity(&wallTop, PROJECTION, VIEW, LIGHT_POSITION);
+			// DrawEntity(&wallBottom, PROJECTION, VIEW, LIGHT_POSITION);
+			// DrawEntity(&player, PROJECTION, VIEW, LIGHT_POSITION);
+
+			UpdateAndRenderScene(&scene, PROJECTION, VIEW);
 
 			SDL_GL_SwapWindow(mainWindow);
 

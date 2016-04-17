@@ -104,14 +104,144 @@ void DrawEntity(st_entity *entity, glm::mat4 projection, glm::mat4 view,  glm::v
 	glDrawArrays(entity->model->draw_method, 0, entity->model->vertice_count);
 }
 
-void CreateCollisionNodeSphere(st_collision_node *node, float radius, glm::vec3 position) {
+void CreateCollisionSphere(st_entity *entity, bool movable, float radius, glm::vec3 position) {
+	st_collision_node *node = &(entity->collider);
 	node->type = SPHERE;
+	node->is_movable = movable;
+	node->parent_position_offset = (position - entity->position);
+
 	node->sphere.radius = radius;
 	node->sphere.origin = position;
 }
 
-void  CreateCollisionNodeBox(st_collision_node *node, glm::vec3 origin, glm::vec3 size) {
+void CreateCollisionBox(st_entity *entity, bool movable, glm::vec3 origin, glm::vec3 size) {
+	st_collision_node *node = &(entity->collider);
 	node->type = BOX;
+	node->parent_position_offset = (entity->position - origin);
 	node->box.origin = origin;
 	node->box.size = size;
+}
+
+void CreateCollisionLine(st_entity *entity, bool movable, glm::vec3 origin, glm::vec3 destination) {
+	st_collision_node *node = &(entity->collider);
+	node->type = LINE;
+	node->parent_position_offset = (entity->position - origin);
+
+	node->line.origin = origin;
+	node->line.destination = destination;
+}
+
+void UpdateCollider(st_entity* entity) {
+	st_collision_node *collider = &entity->collider;
+	if(collider->is_movable) {
+		switch(collider->type) {
+			case LINE:
+			{
+				glm::vec3 delta = collider->line.destination - collider->line.origin;
+				collider->line.origin = entity->position + collider->parent_position_offset;
+				collider->line.destination = collider->line.origin + delta;
+				break;
+			}
+			case SPHERE:
+			{
+				collider->sphere.origin = entity->position + collider->parent_position_offset;
+				break;
+			}
+		}	
+	}
+}
+
+bool SphereLineCollision(st_collision_node *sphere, st_collision_node *line, glm::vec3 *out) {
+	glm::vec3 floor = line->line.destination - line->line.origin;
+	glm::vec3 hypot = sphere->sphere.origin - line->line.origin;
+
+	glm::vec3 projected = glm::proj(hypot, floor);
+
+	float projection_length = glm::length(projected);
+
+	if(glm::normalize(floor) * projection_length != projected)
+		return false;
+
+	if(projection_length < (glm::length(floor) + sphere->sphere.radius)) {
+		glm::vec3 delta = hypot - projected;
+		float delta_length = glm::length(delta);
+
+		if(delta_length < sphere->sphere.radius) {
+			*out = (delta_length - sphere->sphere.radius) * glm::normalize(delta);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+
+void ResolveCollision(st_entity *subject, st_entity *guest) {
+	if (!subject->collider.is_movable)
+		return;
+
+	bool didCollide = false;
+	glm::vec3 shouldMove = {};
+
+	switch(subject->collider.type) {
+		case SPHERE:
+		{
+			switch(guest->collider.type) {
+				case LINE:
+				{
+					didCollide = SphereLineCollision(&subject->collider, &guest->collider, &shouldMove);
+				}
+				break;
+			}
+			break;
+		}
+		case LINE:
+		{
+			switch(guest->collider.type) {
+				case SPHERE:
+				{
+					didCollide = SphereLineCollision(&guest->collider, &subject->collider, &shouldMove);
+				}
+				break;
+			}
+			break;
+		}
+	}
+
+	if (didCollide) {
+		subject->position -= shouldMove;
+	}
+
+}
+
+void PrepareScene(st_scene *scene, int scene_size) {
+	scene->entities = (st_entity**)malloc(sizeof(st_entity*) * scene_size);
+	scene->entity_count = 0;
+}
+
+void AddToScene(st_scene *scene, st_entity *entity) {
+	scene->entities[scene->entity_count] = entity;
+	scene->entity_count += 1;
+}
+
+// this is mostly just collision and rendering
+void UpdateAndRenderScene(st_scene *scene, glm::mat4 projection, glm::mat4 view) {
+	glm::vec3 light_pos = glm::vec3{};
+
+	for(int i = 0; i < scene->entity_count; i++) {
+
+		st_entity *current_entity = scene->entities[i];
+
+		if(current_entity->collider.type != NONE){
+			UpdateCollider(current_entity);
+			// NOTE(brett): naive collision check
+			for(int e = 0; e < scene->entity_count; e++) {
+				if(current_entity == scene->entities[e]) continue;
+				ResolveCollision(current_entity, scene->entities[e]);
+			}
+		}
+		
+
+		DrawEntity(scene->entities[i], projection, view, light_pos);
+	}
 }

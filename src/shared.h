@@ -107,7 +107,7 @@ typedef struct {
 } st_camera;
 
 struct st_sphere {
-	glm::vec3 position;
+	glm::vec3 origin;
 	float radius;
 };
 typedef st_sphere st_circle;
@@ -133,15 +133,13 @@ struct st_collision_type {
 
 typedef struct{
 	COLLISION_NODE_TYPE type;
-	struct {
-		glm::vec3 origin;
-		float radius;
-	} sphere;
+	bool is_movable;
+	glm::vec3 parent_position_offset;
 
-	struct {
-		glm::vec3 origin;
-		glm::vec3 size;
-	} box;
+	st_sphere sphere;
+	st_box box;
+	st_line line;
+
 } st_collision_node;
 
 typedef struct {
@@ -168,24 +166,32 @@ typedef struct {
 	glm::vec3 scale;
 	glm::vec3 rotation;
 
-	st_collision_node collision;
+	st_collision_node collider;
 	st_entity_model *model;
+
 } st_entity;
 
 typedef struct { 
-	st_entity *entities;
+	st_entity **entities;
 	int entity_count;
 } st_scene;
 
 void CreateModel(st_entity_model *model, GLfloat *vertices, int vertices_size, glm::vec3 color1, GLuint shader_id);
 void DrawEntity(st_entity *entity, glm::mat4 projection, glm::mat4 view, glm::vec3 light_pos);
 
-void CreateCollisionNodeSphere(st_collision_node *node, float radius, glm::vec3 position);
-void CreateCollisionNodeRectangle(st_collision_node *node, glm::vec3 origin, glm::vec3 size);
+void CreateCollisionSphere(st_entity *entity, bool movable,  float radius, glm::vec3 position);
+void CreateCollisionBox(st_entity *entity, bool movable,  glm::vec3 origin, glm::vec3 size);
+void CreateCollisionLine(st_entity *entity, bool movable, glm::vec3 origin, glm::vec3 destination);
+void UpdateCollider(st_entity* entity);
+void ResolveCollision(st_entity *subject, st_entity *guest);
+
+bool SphereLineCollision(st_collision_node *a, st_collision_node *b, glm::vec3 *out);
 
 void GetBoundingBox(st_entity *entity);
 void CheckCollision(st_entity *a, st_entity *b);
 
-void RenderScene(st_scene *scene, glm::mat4 projection, glm::mat4 view);
+void PrepareScene(st_scene *scene, int scene_size);
+void AddToScene(st_scene *scene, st_entity *entity);
+void UpdateAndRenderScene(st_scene *scene, glm::mat4 projection, glm::mat4 view);
 
 #endif // __SHARED_HPP
