@@ -1,15 +1,68 @@
 #include <iostream>
+#include <thread>
+#include "net.h"
 
 #define MAIN_SRV_MAXRECV 1024
-#define MAIN_SRV_MAXCLIENTS 30
+#define MAIN_SRV_MAXCLIENTS 28
+#define MAIN_SRV_MAXGAMES 7
 #define MAIN_SRV_DEFAULT_PORTNUM 21825
 
-typedef int (*handle_callback)(void*);
+typedef int (*handle_callback)(void*, SOCKET);
 
-int test_handle_client(void* input)
+int test_handle_client(SOCKET c_in)
 {
 	std::cout << "[=] Made it to client handle with the data" << std::endl;
 	return 1;
+}
+
+void start_game()
+{
+	//Initialize game state for clients
+
+}
+
+int update_client(SOCKET c_in)
+{
+	//Update game state with client packet
+
+}
+
+int send_client_update(SOCKET c_in)
+{
+	//Send client updated status based on game
+
+}
+
+int init_client_send(SOCKET c_in)
+{
+	//Test method
+	char* message = "Hey There, this is a test";
+	return send(c_in, message, strlen(message), 0);
+}
+
+int join_client_to_game(SOCKET c_in, GameState* gameList)
+{
+	//Find first available game
+	//Availabe game is
+	// - Not Started
+	// - Not full
+	//Iterate over games and get first game
+	for(int i = 0; i < MAIN_SRV_MAXGAMES; i++)
+	{
+		if(gameList[i].curState == STOPPED)
+		{
+			//Use this game
+			//make sure it's initialized.			
+			for(int j = 0; j < MAXCLIENTS_PER_GAME; j++)
+			{
+				if(!gameList[i].clients[j])
+				{
+					gameList[i].clients[j] = c_in;
+				}
+			}
+		}
+	}
+
 }
 
 #ifdef _WIN32
@@ -19,19 +72,10 @@ int test_handle_client(void* input)
 
 #pragma comment(lib,"ws2_32.lib")
 
-int init_client_send(SOCKET sin)
-{
-	//Send something on this socket.
-	char* message = "Hey There, this is a test";
-	return send(sin, message, strlen(message), 0);
-}
-
-
-void init_game_server(int portnum, SOCKET* master_in, USHORT num_sockets)
+void init_game_server(int portnum, SOCKET* master_in)
 {
 	WSADATA wsa;
 	struct sockaddr_in server, address;
-	int max_clients = num_sockets;
 	char *message = "Racing Game Main Daemon \r\n";
 	 
 	//size of our receive buffer, this is string length.
@@ -67,8 +111,9 @@ void init_game_server(int portnum, SOCKET* master_in, USHORT num_sockets)
 	return;
 }
 
-int handle_client_event(SOCKET client_socket, handle_callback hFunc)
+int handle_client_event(SOCKET client_socket)
 {
+	//Call a fucntion based on what the client is recieved and who the client is.
 	char *buffer;
 	buffer =  (char*) malloc((MAIN_SRV_MAXRECV + 1) * sizeof(char));
 	//Read the socket and call the function with the data read or return nothing
@@ -98,64 +143,14 @@ int handle_client_event(SOCKET client_socket, handle_callback hFunc)
 	}
 	else
 	{
-		return hFunc((void*)&buffer);
+		//Call a function based on what we got
+		return 0;
 	}
 
 }
 
 #else
 
-void init_game_server(int portnum, SOCKET* master_in, SOCKET* client_sockets, USHORT num_sockets)
-{
-	WSADATA wsa;
-	//SOCKET master , new_socket, s;
-	struct sockaddr_in server, address;
-	int max_clients = num_sockets, activity, addrlen, i, valread;
-	char *message = "Racing Game Main Daemon \r\n";
-	 
-	//size of our receive buffer, this is string length.
-	int MAXRECV = MAIN_SRV_MAXRECV;
-
-	//set of socket descriptors
-	fd_set readfds;
-
-	//1 extra for null character, string termination
-	char *buffer;
-	buffer =  (char*) malloc((MAXRECV + 1) * sizeof(char));
-
-	//clearing out client sockets
-	for(i = 0 ; i < max_clients; i++)
-	{
-	    client_sockets[i] = 0;
-	}
-
-	std::cout << "Initializing Winsock" << std::endl;
-	if(WSAStartup(MAKEWORD(2,2),&wsa) != 0)
-	{
-		std::cout << "Failed - Error Code : " << WSAGetLastError() << std::endl;
-		exit(EXIT_FAILURE);
-	}
-
-	//Create a socket
-	if((*master_in) = socket(AF_INET, SOCK_STREAM, 0) == INVALID_SOCKET)
-	{
-		std::cout << "Couldn't Create Socket: " << WSAGetLastError() << std::endl;
-		exit(EXIT_FAILURE);
-	}
-
-	//Prepare sockaddr_in
-	server.sin_family = AF_INET;
-	server.sin_addr.s_addr = INADDR_ANY;
-	server.sin_port = htons(portnum);
-
-	//Bind
-	if( bind((*master_in), (struct sockaddr*)&server, sizeof(server)) == SOCKET_ERROR)
-	{
-		std::cout << "Bind Failed: " << WSAGetLastError() << std::endl;
-		exit(EXIT_FAILURE);
-	}
-
-}
 
 #endif
 
@@ -166,9 +161,15 @@ int main(int argc, char* argv[])
 	SOCKET master_sock, s, *client_sockets, new_socket;
 	fd_set readfds;
 	struct sockaddr_in address;
+	GameState* currentGames;
+	//Maintain a list of game sessions
+
 
 	//allocate list of sockets
 	client_sockets = (SOCKET*)malloc((max_clients) * sizeof(SOCKET));
+
+	//allocate list of games
+	currentGames = (GameState*)malloc((MAIN_SRV_MAXGAMES) * sizeof(GameState));
 
 	//clearing out client sockets
 	for(int i = 0 ; i < max_clients; i++)
@@ -176,8 +177,19 @@ int main(int argc, char* argv[])
 	    client_sockets[i] = 0;
 	}
 
+	//Mark all game states as stopped
+	for( int i = 0; i < MAIN_SRV_MAXGAMES; i++)
+	{
+		currentGames[i].curState = STOPPED;
+		currentGames[i].serverTicks = 0;
+		for(int j = 0; j < MAXCLIENTS_PER_GAME; j++)
+		{
+			currentGames[i].clients[j] = 0;
+		}
+	}
+
 	//Call Init
-	init_game_server(portnum, &master_sock, max_clients);
+	init_game_server(portnum, &master_sock);
 
 	//Listen
 	listen(master_sock, 3);
@@ -220,7 +232,9 @@ int main(int argc, char* argv[])
 			std::cout << "Got new connection: fd: " << new_socket << " ip: " << inet_ntoa(address.sin_addr) << " port: " << ntohs(address.sin_port) << std::endl;
 			
 			//Send init message
-			res = init_client_send(new_socket);
+			//This should join the client with the first available game instance
+			//res = init_client_send(new_socket);
+			res = join_client_to_game(new_socket);
 
 			//add new connection
 			for(int i = 0; i < max_clients; i++)
@@ -239,10 +253,8 @@ int main(int argc, char* argv[])
 		{
 			s = client_sockets[i];
 			if(FD_ISSET(s, &readfds))
-			{
-				getpeername(s, (struct sockaddr*)&address, (int*)&addrlen);
-
-				res = handle_client_event(s, test_handle_client);
+			{				
+				res = handle_client_event(s);
 				if(!res || res < 0)
 				{
 					//Disconnection from handler, lets set the client socket to zero.
