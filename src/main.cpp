@@ -168,6 +168,8 @@ int main(int argc, char* argv[]) {
 	float forwardPower = 0.f;
 	float lateralPower = 0.f;
 
+	float playerRotation = 0.f;
+
 
 	SDL_Event event;
 	while(running) {
@@ -263,8 +265,10 @@ int main(int argc, char* argv[]) {
 			acceleration += -glm::normalize(glm::rotate(glm::vec3{cameraDirection.x, 0.f, cameraDirection.z}, Radians(90.f), glm::vec3{0.f, 1.f, 0.f})) * (lateralPower * frameTime);
 			playerVelocity += acceleration;
 			player.position += playerVelocity;
+			player.rotation = glm::vec3{0.f, -Radians(playerRotation += turnMotion), 0.f};
 
 			playerVelocity *= 0.92f;
+
 
 			LIGHT_POSITION = glm::normalize(camera.eye - camera.lookat) * 50.f + camera.lookat;
 
