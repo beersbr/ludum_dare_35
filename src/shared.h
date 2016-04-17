@@ -19,6 +19,30 @@ enum COLLISION_NODE_TYPE {
 	COLLISION_NODE_TYPES_COUNT
 };
 
+GLfloat GRID_VERTICES_5[] = {
+	-2.f,  0.f, -2.f,
+	-2.f,  0.f,  2.f,
+	-1.f,  0.f, -2.f,
+	-1.f,  0.f,  2.f,
+	 0.f,  0.f, -2.f,
+	 0.f,  0.f,  2.f,
+	 1.f,  0.f, -2.f,
+	 1.f,  0.f,  2.f,
+	 2.f,  0.f, -2.f,
+	 2.f,  0.f,  2.f,
+
+	-2.f,  0.f, -2.f,
+	 2.f,  0.f, -2.f,
+	-2.f,  0.f, -1.f,
+	 2.f,  0.f, -1.f,
+	-2.f,  0.f,  0.f,
+	 2.f,  0.f,  0.f,
+	-2.f,  0.f,  1.f,
+	 2.f,  0.f,  1.f,
+	-2.f,  0.f,  2.f,
+	 2.f,  0.f,  2.f,
+};
+
 GLfloat BOX_VERTICES[] = {
 	// back
 	 0.5f,  0.5f, -0.5f,
@@ -127,6 +151,9 @@ typedef struct {
 
 typedef struct { 
 	glm::vec3 position;
+	glm::vec3 scale;
+	glm::vec3 rotation;
+
 	st_collision_node collision;
 	st_entity_model *model;
 } st_entity;

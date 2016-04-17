@@ -57,8 +57,6 @@ int main(int argc, char* argv[]) {
 	SDL_GL_SetSwapInterval(1);
 
 	//NOTE(brett): initialize game code
-
-
 	int num_joysticks = SDL_NumJoysticks();
 	if(num_joysticks > 0) {
 		if(SDL_IsGameController(0)){
@@ -104,17 +102,27 @@ int main(int argc, char* argv[]) {
 
 	VIEW = glm::lookAt(camera.eye, camera.lookat, camera.up);
 
+	st_entity_model gridModel = {};	
+	gridModel.draw_method = GL_LINES;
+	CreateModel(&gridModel, GRID_VERTICES_5, sizeof(GRID_VERTICES_5)/sizeof(GLfloat), glm::vec3{1.f, 1.f, 1.f}, shader);
+	st_entity grid = {};
+	grid.model = &gridModel;
+	grid.scale = glm::vec3{40.f, 40.f, 40.f};
+
 	st_entity_model boxModel = {};
-	std::cout << sizeof(BOX_VERTICES)/sizeof(GLfloat) << std::endl;
+	boxModel.draw_method = GL_TRIANGLES;
 	CreateModel(&boxModel, BOX_VERTICES, sizeof(BOX_VERTICES)/sizeof(GLfloat), glm::vec3{0.f, 0.5f, 1.0f}, shader);
 	st_entity player = {};
 	player.model = &boxModel;
+	player.scale = glm::vec3{20.f, 20.f, 20.f};
 
 	float power = 0.f;
 	float powerChange = 100.f; // per second
 
 	glm::vec3 cameraMotion = {};
 	glm::vec2 motion = {};
+
+	st_scene scene;
 
 	SDL_Event event;
 	while(running) {
@@ -193,7 +201,7 @@ int main(int argc, char* argv[]) {
 			player.position.x += motion.x * frameTime * 250.f;
 			player.position.z += motion.y * frameTime * 250.f;
 
-			LIGHT_POSITION = glm::vec3{ 0.f, 40.f, 0.f };
+			LIGHT_POSITION = glm::normalize(camera.eye - camera.lookat) * 50.f + camera.lookat;
 			VIEW = glm::lookAt(camera.eye, camera.lookat, camera.up);
 
 			// std::cout << "\rcamera position " << glm::to_string(LIGHT_POSITION) << std::endl;
@@ -201,6 +209,7 @@ int main(int argc, char* argv[]) {
 			glClearColor(0.3, 0.0, 0.3, 1.0);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+			DrawEntity(&grid, PROJECTION, VIEW, LIGHT_POSITION);
 			DrawEntity(&player, PROJECTION, VIEW, LIGHT_POSITION);
 
 			SDL_GL_SwapWindow(mainWindow);
