@@ -13,7 +13,10 @@
 #include <iostream>
 
 enum COLLISION_NODE_TYPE {
-	SPHERE = 1,
+	NONE = 0,
+	CIRCLE,
+	LINE,
+	SPHERE,
 	RECTANGLE,
 	BOX,
 	COLLISION_NODE_TYPES_COUNT
@@ -107,10 +110,21 @@ struct st_sphere {
 	glm::vec3 position;
 	float radius;
 };
+typedef st_sphere st_circle;
 
 struct st_box {
 	glm::vec3 origin;
 	glm::vec3 size;
+};
+
+struct st_line {
+	glm::vec3 origin;
+	glm::vec3 destination;
+};
+
+struct st_ray {
+	glm::vec3 origin;
+	glm::vec3 direction;
 };
 
 struct st_collision_type {
@@ -171,5 +185,7 @@ void CreateCollisionNodeRectangle(st_collision_node *node, glm::vec3 origin, glm
 
 void GetBoundingBox(st_entity *entity);
 void CheckCollision(st_entity *a, st_entity *b);
+
+void RenderScene(st_scene *scene, glm::mat4 projection, glm::mat4 view);
 
 #endif // __SHARED_HPP
