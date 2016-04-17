@@ -151,10 +151,13 @@ int main(int argc, char* argv[]) {
 	player.position  = glm::vec3{0.f, 10.f, 0.f};
 	CreateCollisionSphere(&player, true, 10.f, glm::vec3{});
 
-	CreateWall(0, false);
+	st_entity wallRight = {};
+	CreateWall(&wallRight, &boxModelOrange, true, glm::vec3{80.f, 0.f, 80.f}, glm::vec3{80.f, 0.f, -80.f});
+
 
 	st_scene scene;
 	PrepareScene(&scene, 1024);
+	AddToScene(&scene, &wallRight);
 	AddToScene(&scene, &wallBottom);
 	AddToScene(&scene, &wallTop);
 	AddToScene(&scene, &wallLeft);
