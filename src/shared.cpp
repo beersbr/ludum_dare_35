@@ -19,31 +19,36 @@ void CreateModel(st_entity_model *model, GLfloat *vertices, int vertices_size, g
 	model->vertices = (st_model_vertex*)malloc(sizeof(st_model_vertex)*model_vertex_count);
 	model->draw_method = GL_TRIANGLES;
 
-	for(int i = 0; i < vertices_size; i += 9) {
-		int vi = i/3;
 
-		glm::vec3 v0 = glm::vec3{ vertices[i], vertices[i+1], vertices[i+2] };
-		glm::vec3 v1 = glm::vec3{ vertices[i+3], vertices[i+4], vertices[i+5] };
-		glm::vec3 v2 = glm::vec3{ vertices[i+6], vertices[i+7], vertices[i+8] };
+	if(model->draw_method == GL_TRIANGLES) {
+		for(int i = 0; i < vertices_size; i += 9) {
+			int vi = i/3;
 
-		glm::vec3 normal = glm::normalize(glm::cross((v2 - v0), (v1 - v0)));
+			glm::vec3 v0 = glm::vec3{ vertices[i], vertices[i+1], vertices[i+2] };
+			glm::vec3 v1 = glm::vec3{ vertices[i+3], vertices[i+4], vertices[i+5] };
+			glm::vec3 v2 = glm::vec3{ vertices[i+6], vertices[i+7], vertices[i+8] };
 
-		model->vertices[vi] = st_model_vertex{ glm::vec3{vertices[i], vertices[i+1], vertices[i+2] },
-											   normal,
-											   color1,
-											   glm::vec2{} };
+			glm::vec3 normal = glm::normalize(glm::cross((v2 - v0), (v1 - v0)));
 
-		model->vertices[vi+1] = st_model_vertex{ glm::vec3{vertices[i+3], vertices[i+4], vertices[i+5] },
-											   normal,
-											   color1,
-											   glm::vec2{} };
+			model->vertices[vi] = st_model_vertex{ glm::vec3{vertices[i], vertices[i+1], vertices[i+2] },
+												   normal,
+												   color1,
+												   glm::vec2{} };
 
-		model->vertices[vi+2] = st_model_vertex{ glm::vec3{vertices[i+6], vertices[i+7], vertices[i+8] },
-											   normal,
-											   color1,
-											   glm::vec2{} };
+			model->vertices[vi+1] = st_model_vertex{ glm::vec3{vertices[i+3], vertices[i+4], vertices[i+5] },
+												   normal,
+												   color1,
+												   glm::vec2{} };
 
+			model->vertices[vi+2] = st_model_vertex{ glm::vec3{vertices[i+6], vertices[i+7], vertices[i+8] },
+												   normal,
+												   color1,
+												   glm::vec2{} };
+
+		}		
 	}
+
+
 
 	model->shader_id = shader_id;
 

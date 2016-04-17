@@ -116,6 +116,8 @@ int main(int argc, char* argv[]) {
 	glm::vec3 cameraMotion = {};
 	glm::vec2 motion = {};
 
+	st_scene scene;
+
 	SDL_Event event;
 	while(running) {
 		int lastTime = currentTime;
@@ -193,7 +195,7 @@ int main(int argc, char* argv[]) {
 			player.position.x += motion.x * frameTime * 250.f;
 			player.position.z += motion.y * frameTime * 250.f;
 
-			LIGHT_POSITION = glm::vec3{ 0.f, 40.f, 0.f };
+			LIGHT_POSITION = glm::normalize(camera.eye - camera.lookat) * 50.f + camera.lookat;
 			VIEW = glm::lookAt(camera.eye, camera.lookat, camera.up);
 
 			// std::cout << "\rcamera position " << glm::to_string(LIGHT_POSITION) << std::endl;

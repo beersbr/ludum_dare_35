@@ -18,6 +18,7 @@ void main()
 	vec3 normalPosition = vec3((model * vec4(normal, 1.0)).xyz);
 
 	float weight = dot(normalize(lightPosition), normalize(normal));
+	weight = max(weight, 0.0);
 	f_color =  weight * color;
 
 	gl_Position = projection * view * model * vec4(position, 1.0);
