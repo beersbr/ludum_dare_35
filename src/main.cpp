@@ -134,9 +134,9 @@ int main(int argc, char* argv[]) {
 	st_entity wallLeft = {};
 	wallLeft.model     = &boxModelOrange;
 	wallLeft.scale     = glm::vec3{160.f, 10.f, 10.f};
-	wallLeft.position  = glm::vec3{0.f, 5.f, -80.f};
+	wallLeft.position  = glm::vec3{-80.f, 5.f, -160.f};
 	wallLeft.rotation = glm::vec3{0.f, Radians(90.f), 0.f};
-	CreateCollisionLine(&wallLeft, false, glm::vec3{-80.f, 0.f, -80.f}, glm::vec3{80.f, 0.f, -80.f});
+	CreateCollisionLine(&wallLeft, false, glm::vec3{-80.f, 0.f, -80.f}, glm::vec3{-80.f, 0.f, -240.f});
 
 	st_entity grid = {};
 	grid.model     = &gridModel;
