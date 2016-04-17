@@ -12,6 +12,9 @@
 
 #include <iostream>
 
+#define Radians(n) ((n)*(3.14159f/180.f))
+#define Degrees(n) ((n)*(180.f/3.14159f))
+
 enum COLLISION_NODE_TYPE {
 	NONE = 0,
 	CIRCLE,

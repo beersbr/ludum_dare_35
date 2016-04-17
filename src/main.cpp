@@ -131,6 +131,13 @@ int main(int argc, char* argv[]) {
 	wallTop.position  = glm::vec3{0.f, 5.f, -80.f};
 	CreateCollisionLine(&wallTop, false, glm::vec3{-80.f, 0.f, -80.f}, glm::vec3{80.f, 0.f, -80.f});
 
+	st_entity wallLeft = {};
+	wallLeft.model     = &boxModelOrange;
+	wallLeft.scale     = glm::vec3{160.f, 10.f, 10.f};
+	wallLeft.position  = glm::vec3{0.f, 5.f, -80.f};
+	wallLeft.rotation = glm::vec3{0.f, Radians(90.f), 0.f};
+	CreateCollisionLine(&wallLeft, false, glm::vec3{-80.f, 0.f, -80.f}, glm::vec3{80.f, 0.f, -80.f});
+
 	st_entity grid = {};
 	grid.model     = &gridModel;
 	grid.scale     = glm::vec3{40.f, 40.f, 40.f};
@@ -141,18 +148,26 @@ int main(int argc, char* argv[]) {
 	player.position  = glm::vec3{0.f, 10.f, 0.f};
 	CreateCollisionSphere(&player, true, 10.f, glm::vec3{});
 
-	float power       = 0.f;
-	float powerChange = 100.f; // per second
-
-	glm::vec3 cameraMotion = {};
-	glm::vec2 motion       = {};
-
 	st_scene scene;
 	PrepareScene(&scene, 1024);
 	AddToScene(&scene, &wallBottom);
 	AddToScene(&scene, &wallTop);
+	AddToScene(&scene, &wallLeft);
 	AddToScene(&scene, &grid);
 	AddToScene(&scene, &player);
+
+	float power       = 0.f;
+	float powerChange = 100.f; // per second
+
+	glm::vec3 cameraMotion    = {};
+	glm::vec3 cameraDirection = camera.lookat - camera.eye;
+	float turnMotion          = 0.f;
+	glm::vec2 motion          = {};
+
+	glm::vec3 playerVelocity = {};
+	float forwardPower = 0.f;
+	float lateralPower = 0.f;
+
 
 	SDL_Event event;
 	while(running) {
@@ -179,15 +194,30 @@ int main(int argc, char* argv[]) {
 						int axis = (int)event.jaxis.axis;
 						switch(axis){
 							case SDL_CONTROLLER_AXIS_LEFTX:
-								// TODO(brett): this needs to be fixed so we arent 'leaking' over 1 or below 0
-								motion.x = event.jaxis.value/(float)0x7FFF;
-								if(fabs(motion.x) < 0.2f) motion.x = 0.f;
+								lateralPower = event.jaxis.value/(float)0x7FFF;
+								if(fabs(lateralPower) < 0.2f) lateralPower = 0.f;
+								lateralPower *= 8.f;
 								break;
 
 							case SDL_CONTROLLER_AXIS_LEFTY:
-								motion.y = event.jaxis.value/(float)0x7FFF;
+							{
+								forwardPower = event.jaxis.value/(float)0x7FFF;
+								if(fabs(forwardPower) < 0.2f) forwardPower = 0.f;
+								forwardPower *= 40.f;
+								break;
+							}
+							case SDL_CONTROLLER_AXIS_RIGHTX:
 
-								if(fabs(motion.y) < 0.2f) motion.y = 0.f;
+								turnMotion = event.jaxis.value/(float)0x7FFF;
+								if(fabs(turnMotion) < 0.2f) turnMotion = 0.f;
+
+								turnMotion *= 90.f;
+								turnMotion *= frameTime;
+								break;
+
+							case SDL_CONTROLLER_AXIS_RIGHTY:
+								// motion.y = event.jaxis.value/(float)0x7FFF;
+								// if(fabs(motion.y) < 0.2f) motion.y = 0.f;
 								break;
 						}
 						
@@ -224,26 +254,29 @@ int main(int argc, char* argv[]) {
 			cameraMotion.x = player.position.x - camera.lookat.x;
 			cameraMotion.z = player.position.z - camera.lookat.z;
 
-			cameraMotion /= 10.f;
+			cameraMotion /= 5.f;
 
 			camera.lookat += cameraMotion;
 			camera.eye += cameraMotion;
 
-			player.position.x += motion.x * frameTime * 250.f;
-			player.position.z += motion.y * frameTime * 250.f;
+			glm::vec3 acceleration = -glm::normalize(glm::vec3{cameraDirection.x, 0.f, cameraDirection.z}) * (forwardPower * frameTime);
+			acceleration += -glm::normalize(glm::rotate(glm::vec3{cameraDirection.x, 0.f, cameraDirection.z}, Radians(90.f), glm::vec3{0.f, 1.f, 0.f})) * (lateralPower * frameTime);
+			playerVelocity += acceleration;
+			player.position += playerVelocity;
+
+			playerVelocity *= 0.92f;
 
 			LIGHT_POSITION = glm::normalize(camera.eye - camera.lookat) * 50.f + camera.lookat;
+
+			cameraDirection = glm::rotate(cameraDirection, Radians(-turnMotion), glm::vec3{0.f, 1.f, 0.f});
+
+			camera.eye = camera.lookat - cameraDirection;
 			VIEW = glm::lookAt(camera.eye, camera.lookat, camera.up);
 
 			// std::cout << "\rcamera position " << glm::to_string(LIGHT_POSITION) << std::endl;
 
 			glClearColor(0.3, 0.0, 0.3, 1.0);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-			// DrawEntity(&grid, PROJECTION, VIEW, LIGHT_POSITION);
-			// DrawEntity(&wallTop, PROJECTION, VIEW, LIGHT_POSITION);
-			// DrawEntity(&wallBottom, PROJECTION, VIEW, LIGHT_POSITION);
-			// DrawEntity(&player, PROJECTION, VIEW, LIGHT_POSITION);
 
 			UpdateAndRenderScene(&scene, PROJECTION, VIEW);
 

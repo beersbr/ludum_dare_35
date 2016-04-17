@@ -96,6 +96,11 @@ void DrawEntity(st_entity *entity, glm::mat4 projection, glm::mat4 view,  glm::v
 
 	glm::mat4 model = glm::mat4();
 	model = glm::translate(model, entity->position);
+
+	model = glm::rotate(model, entity->rotation.x, glm::vec3{1.f, 0.f, 0.f});
+	model = glm::rotate(model, entity->rotation.y, glm::vec3{0.f, 1.f, 0.f});
+	model = glm::rotate(model, entity->rotation.z, glm::vec3{0.f, 0.f, 1.f});
+
 	model = glm::scale(model, entity->scale);
 
 	GLint modelLocation = glGetUniformLocation(entity->model->shader_id, "model");
@@ -226,7 +231,7 @@ void AddToScene(st_scene *scene, st_entity *entity) {
 
 // this is mostly just collision and rendering
 void UpdateAndRenderScene(st_scene *scene, glm::mat4 projection, glm::mat4 view) {
-	glm::vec3 light_pos = glm::vec3{};
+	glm::vec3 light_pos = glm::vec3{0.f, 40.f, 0.f};
 
 	for(int i = 0; i < scene->entity_count; i++) {
 
