@@ -165,6 +165,7 @@ typedef struct {
 } st_entity_model;
 
 typedef struct {
+	unsigned int entId;
 	glm::vec3 position;
 	glm::vec3 scale;
 	glm::vec3 rotation;

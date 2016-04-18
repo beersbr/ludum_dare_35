@@ -173,6 +173,7 @@ int main(int argc, char* argv[]) {
 		//Create entities based on what we got
 		st_entity tmp = {};
 		tmp.model = &boxModel;
+		tmp.info.entId = tmp_ent->entId;
 		tmp.info.scale = tmp_ent->scale;
 		tmp.info.position = tmp_ent->position;
 		CreateCollisionSphere(&tmp, true, 10.f, glm::vec3{});

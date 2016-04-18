@@ -24,7 +24,8 @@ int init_winsock();
 enum GAME_STATES {STARTED=1, STOPPED};
 enum STATUS_MESSAGE { JOIN_OK=1, JOIN_FAIL};
 enum CLIENT_REQ {
-	ENTITY_UPDATE = 1,
+	SRV_ENTITY_UPDATE = 1,
+	CLI_ENTITY_UPDATE,
 	GAME_START,
 };
 
@@ -61,7 +62,7 @@ typedef struct game_state
 } GameState;
 
 int JoinGame(st_entity_info** playerEntities);
-st_entity* GetEntities();
+st_entity_info* GetEntities(SOCKET c_in, unsigned int* entityCount);
 SOCKET connect_to_game();
 
 #endif

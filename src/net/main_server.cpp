@@ -1,6 +1,7 @@
 #include <iostream>
 #include <thread>
 #include "net.h"
+#include "net.cpp"
 
 typedef int (*handle_callback)(void*, SOCKET);
 
@@ -59,25 +60,16 @@ GameState* get_client_game(SOCKET c_in, GameState* gameList)
 	return 0;
 }
 
-void set_and_send_init_entities(SOCKET c_in, GameState* gameList)
+void send_entities(SOCKET c_in, GameState* gameList)
 {
-	//Get game
+	//Send out a update of entities to the client
 	GameState* targetGame = get_client_game(c_in, gameList);
-	//Set initial entities based on which client this is.
-	//multiplier can be the current number of clients in the game
-	st_entity_info tmp_player = {};
-	//player.model     = &boxModel;
-	tmp_player.scale     = glm::vec3{20.f, 20.f, 20.f};
-	tmp_player.position  = position_matrix[targetGame->clientCount];
-
-	targetGame->ents->push_back(tmp_player);
-	targetGame->entityCount++;
 	MessageHeader* msgHead = (MessageHeader*)malloc(sizeof(MessageHeader) + (sizeof(st_entity_info) * targetGame->entityCount));
-	msgHead->reqType = ENTITY_UPDATE;
-	msgHead->tick = 0;
+	msgHead->reqType = SRV_ENTITY_UPDATE;
+	msgHead->tick = targetGame->serverTicks;
 	msgHead->entityCount = targetGame->entityCount;
 	msgHead->payloadLength = (sizeof(st_entity_info) * targetGame->entityCount);
-	st_entity_info* sendData = (st_entity_info*)(msgHead +1);
+	st_entity_info* sendData = (st_entity_info*)(msgHead+1);
 	for(std::list<st_entity_info>::const_iterator iterator = targetGame->ents->begin();
 		iterator != targetGame->ents->end();
 		++iterator)
@@ -88,6 +80,55 @@ void set_and_send_init_entities(SOCKET c_in, GameState* gameList)
 	
 	//send it
 	int res = send(c_in, (char*)msgHead, (sizeof(MessageHeader) + (sizeof(st_entity_info) * targetGame->entityCount)),0);
+
+}
+
+void read_entities_and_update(SOCKET c_in, MessageHeader& head, GameState* gameList)
+{
+	//Read entities and update the central game entities
+	GameState* targetGame = get_client_game(c_in, gameList);
+	unsigned int entityCount;
+	st_entity_info* tmp = GetEntities(c_in, &entityCount);
+	//Update entities in targetGame list based on IDs
+	for(int i = 0; i < entityCount; i++)
+	{
+		for(std::list<st_entity_info>::iterator iterator = targetGame->ents->begin();
+		iterator != targetGame->ents->end();
+		++iterator)
+		{
+			if(tmp->entId == iterator->entId)
+			{
+				//Update entities here
+				//Might need to update current velocity too
+				iterator->position = tmp->position;
+				continue;
+			}
+		}
+	}
+	//Broadcast entities on all clients!
+	for(int i = 0; i < targetGame->clientCount; i++)
+	{
+		send_entities(targetGame->clients[i], gameList);
+	}
+	return;
+
+}
+
+void set_and_send_init_entities(SOCKET c_in, GameState* gameList)
+{
+	//Get game
+	GameState* targetGame = get_client_game(c_in, gameList);
+	//Set initial entities based on which client this is.
+	//multiplier can be the current number of clients in the game
+	st_entity_info tmp_player = {};
+	//player.model     = &boxModel;
+	tmp_player.scale     = glm::vec3{20.f, 20.f, 20.f};
+	tmp_player.position  = position_matrix[targetGame->clientCount];
+	tmp_player.entId 	 = targetGame->entityCount;
+
+	targetGame->ents->push_back(tmp_player);
+	targetGame->entityCount++;
+	send_entities(c_in, gameList);
 	return;
 }
 
@@ -151,7 +192,6 @@ int join_client_to_game(SOCKET c_in, GameState* gameList)
 					}
 					//Now send the list of entities we have for this game object.
 					set_and_send_init_entities(c_in, gameList);
-
 					return 1;
 				}
 			}
@@ -163,9 +203,21 @@ int join_client_to_game(SOCKET c_in, GameState* gameList)
 	return 0;
 }
 
-void dispatch_client_data_call(SOCKET c_in, GameState* games)
+void dispatch_client_data_call(SOCKET c_in, MessageHeader& header, GameState* games)
 {
-
+	//Read message header and give data back based on resposne
+	switch(header.reqType)
+	{
+		//Client is sending us an entity update
+		case CLI_ENTITY_UPDATE:
+			read_entities_and_update(c_in, header, games);
+			break;
+		case SRV_ENTITY_UPDATE:
+			send_entities(c_in, games);
+			break;
+		default:
+			break;
+	}
 }
 
 #ifdef _WIN32
@@ -217,10 +269,10 @@ void init_game_server(int portnum, SOCKET* master_in)
 int handle_client_event(SOCKET client_socket, GameState* games)
 {
 	//Call a fucntion based on what the client is recieved and who the client is.
-	char *buffer;
-	buffer =  (char*) malloc((MAIN_SRV_MAXRECV + 1) * sizeof(char));
+	MessageHeader msgHead;
+	//buffer =  (char*) malloc((MAIN_SRV_MAXRECV + 1) * sizeof(char));
 	//Read the socket and call the function with the data read or return nothing
-	int data = recv(client_socket, buffer, MAIN_SRV_MAXRECV, 0);
+	int data = recv(client_socket, (char*)&msgHead, sizeof(msgHead), 0);
 
 	if(data == SOCKET_ERROR)
 	{
@@ -250,7 +302,8 @@ int handle_client_event(SOCKET client_socket, GameState* games)
 	else
 	{
 		//Call a function based on what we got
-		dispatch_client_data_call(client_socket, games);
+		//All messages should have a message header
+		dispatch_client_data_call(client_socket, msgHead, games);
 		return 0;
 	}
 
