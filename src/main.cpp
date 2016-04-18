@@ -204,7 +204,10 @@ int main(int argc, char* argv[]) {
 	CreateWall(&entities[entity_count], &boxModelOrange, true, glm::vec3{-880.f, 0.f, -560.f}, glm::vec3{-80.f, 0.f, -560.f}); 
 	AddToScene(&scene, &entities[entity_count++]);
 
-	CreateWall(&entities[entity_count], &boxModelOrange, true, glm::vec3{-80.f, 0.f, -560.f}, glm::vec3{-80.f, 0.f, -80.f}); 
+	CreateWall(&entities[entity_count], &boxModelOrange, true, glm::vec3{-880.f, 0.f, -560.f}, glm::vec3{-880.f, 0.f, 560.f}); 
+	AddToScene(&scene, &entities[entity_count++]);
+
+	CreateWall(&entities[entity_count], &boxModelOrange, true, glm::vec3{-880.f, 0.f,  560.f}, glm::vec3{-80.f, 0.f, 560.f}); 
 	AddToScene(&scene, &entities[entity_count++]);
 
 	AddToScene(&scene, &wallRight);
