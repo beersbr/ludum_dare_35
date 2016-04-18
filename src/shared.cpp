@@ -95,13 +95,13 @@ void DrawEntity(st_entity *entity, glm::mat4 projection, glm::mat4 view,  glm::v
 	glUniform3fv(lightLocation, 1, (GLfloat*)&light_pos[0]);
 
 	glm::mat4 model = glm::mat4();
-	model = glm::translate(model, entity->position);
+	model = glm::translate(model, entity->info.position);
 
-	model = glm::rotate(model, entity->rotation.x, glm::vec3{1.f, 0.f, 0.f});
-	model = glm::rotate(model, entity->rotation.y, glm::vec3{0.f, 1.f, 0.f});
-	model = glm::rotate(model, entity->rotation.z, glm::vec3{0.f, 0.f, 1.f});
+	model = glm::rotate(model, entity->info.rotation.x, glm::vec3{1.f, 0.f, 0.f});
+	model = glm::rotate(model, entity->info.rotation.y, glm::vec3{0.f, 1.f, 0.f});
+	model = glm::rotate(model, entity->info.rotation.z, glm::vec3{0.f, 0.f, 1.f});
 
-	model = glm::scale(model, entity->scale);
+	model = glm::scale(model, entity->info.scale);
 
 	GLint modelLocation = glGetUniformLocation(entity->model->shader_id, "model");
 	glUniformMatrix4fv(modelLocation, 1, false, (GLfloat*)&model);
@@ -110,46 +110,46 @@ void DrawEntity(st_entity *entity, glm::mat4 projection, glm::mat4 view,  glm::v
 }
 
 void CreateCollisionSphere(st_entity *entity, bool movable, float radius, glm::vec3 position) {
-	st_collision_node *node = &(entity->collider);
+	st_collision_node *node = &(entity->info.collider);
 	node->type = SPHERE;
 	node->is_movable = movable;
-	node->parent_position_offset = (position - entity->position);
+	node->parent_position_offset = (position - entity->info.position);
 
 	node->sphere.radius = radius;
 	node->sphere.origin = position;
 }
 
 void CreateCollisionBox(st_entity *entity, bool movable, glm::vec3 origin, glm::vec3 size) {
-	st_collision_node *node = &(entity->collider);
+	st_collision_node *node = &(entity->info.collider);
 	node->type = BOX;
-	node->parent_position_offset = (entity->position - origin);
+	node->parent_position_offset = (entity->info.position - origin);
 	node->box.origin = origin;
 	node->box.size = size;
 }
 
 void CreateCollisionLine(st_entity *entity, bool movable, glm::vec3 origin, glm::vec3 destination) {
-	st_collision_node *node = &(entity->collider);
+	st_collision_node *node = &(entity->info.collider);
 	node->type = LINE;
-	node->parent_position_offset = (entity->position - origin);
+	node->parent_position_offset = (entity->info.position - origin);
 
 	node->line.origin = origin;
 	node->line.destination = destination;
 }
 
 void UpdateCollider(st_entity* entity) {
-	st_collision_node *collider = &entity->collider;
+	st_collision_node *collider = &entity->info.collider;
 	if(collider->is_movable) {
 		switch(collider->type) {
 			case LINE:
 			{
 				glm::vec3 delta = collider->line.destination - collider->line.origin;
-				collider->line.origin = entity->position + collider->parent_position_offset;
+				collider->line.origin = entity->info.position + collider->parent_position_offset;
 				collider->line.destination = collider->line.origin + delta;
 				break;
 			}
 			case SPHERE:
 			{
-				collider->sphere.origin = entity->position + collider->parent_position_offset;
+				collider->sphere.origin = entity->info.position + collider->parent_position_offset;
 				break;
 			}
 		}	
@@ -182,19 +182,19 @@ bool SphereLineCollision(st_collision_node *sphere, st_collision_node *line, glm
 
 
 void ResolveCollision(st_entity *subject, st_entity *guest) {
-	if (!subject->collider.is_movable)
+	if (!subject->info.collider.is_movable)
 		return;
 
 	bool didCollide = false;
 	glm::vec3 shouldMove = {};
 
-	switch(subject->collider.type) {
+	switch(subject->info.collider.type) {
 		case SPHERE:
 		{
-			switch(guest->collider.type) {
+			switch(guest->info.collider.type) {
 				case LINE:
 				{
-					didCollide = SphereLineCollision(&subject->collider, &guest->collider, &shouldMove);
+					didCollide = SphereLineCollision(&subject->info.collider, &guest->info.collider, &shouldMove);
 				}
 				break;
 			}
@@ -202,10 +202,10 @@ void ResolveCollision(st_entity *subject, st_entity *guest) {
 		}
 		case LINE:
 		{
-			switch(guest->collider.type) {
+			switch(guest->info.collider.type) {
 				case SPHERE:
 				{
-					didCollide = SphereLineCollision(&guest->collider, &subject->collider, &shouldMove);
+					didCollide = SphereLineCollision(&guest->info.collider, &subject->info.collider, &shouldMove);
 				}
 				break;
 			}
@@ -214,7 +214,7 @@ void ResolveCollision(st_entity *subject, st_entity *guest) {
 	}
 
 	if (didCollide) {
-		subject->position -= shouldMove;
+		subject->info.position -= shouldMove;
 	}
 
 }
@@ -237,7 +237,7 @@ void UpdateAndRenderScene(st_scene *scene, glm::mat4 projection, glm::mat4 view)
 
 		st_entity *current_entity = scene->entities[i];
 
-		if(current_entity->collider.type != NONE){
+		if(current_entity->info.collider.type != NONE){
 			UpdateCollider(current_entity);
 			// NOTE(brett): naive collision check
 			for(int e = 0; e < scene->entity_count; e++) {

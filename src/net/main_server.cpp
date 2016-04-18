@@ -38,27 +38,73 @@ int init_client_send(SOCKET c_in)
 	return send(c_in, message, strlen(message), 0);
 }
 
-int remove_client_from_game(SOCKET c_in, GameState* gameList)
+GameState* get_client_game(SOCKET c_in, GameState* gameList)
 {
-	//Look for game this client is a part of, and RIP THEM OUT
-	//Also, send update packet to clients that says "Hey, this guy isn't in your game anymore"
 	for(int i = 0; i < MAIN_SRV_MAXGAMES; i++)
 	{
 		for(int j = 0; j < MAXCLIENTS_PER_GAME; j++)
 		{
 			if(gameList[i].clients[j] == c_in)
 			{
-				//We found it, remove it from the list
-				// (set to zero)
-				std::cout << "Removed client from game " << i << std::endl;
-				gameList[i].clients[j] = 0;
-				gameList[i].clientCount--;
+				return &gameList[i];
+			}
+		}
+	}
+	return 0;
+}
+
+void set_and_send_init_entities(SOCKET c_in, GameState* gameList)
+{
+	//Get game
+	GameState* targetGame = get_client_game(c_in, gameList);
+	//Set initial entities based on which client this is.
+	//multiplier can be the current number of clients in the game
+	st_entity_info tmp_player = {};
+	//player.model     = &boxModel;
+	tmp_player.scale     = glm::vec3{20.f, 20.f, 20.f};
+	tmp_player.position  = glm::vec3{0.f, (10.f * targetGame->clientCount), 0.f};
+
+	targetGame->ents->push_back(tmp_player);
+	targetGame->entityCount++;
+	MessageHeader* msgHead = (MessageHeader*)malloc(sizeof(MessageHeader) + (sizeof(st_entity_info) * targetGame->entityCount));
+	msgHead->reqType = ENTITY_UPDATE;
+	msgHead->tick = 0;
+	msgHead->entityCount = targetGame->entityCount;
+	msgHead->payloadLength = (sizeof(st_entity_info) * targetGame->entityCount);
+	st_entity_info* sendData = (st_entity_info*)(msgHead +1);
+	for(std::list<st_entity_info>::const_iterator iterator = targetGame->ents->begin();
+		iterator != targetGame->ents->end();
+		++iterator)
+	{
+		(*sendData) = *iterator;
+		sendData++;
+	}
+	
+	//send it
+	int res = send(c_in, (char*)msgHead, (sizeof(MessageHeader) + (sizeof(st_entity_info) * targetGame->entityCount)),0);
+	return;
+}
+
+int remove_client_from_game(SOCKET c_in, GameState* gameList)
+{
+	//Look for game this client is a part of, and RIP THEM OUT
+	//Also, send update packet to clients that says "Hey, this guy isn't in your game anymore"
+	GameState* targetGame = get_client_game(c_in, gameList);
+	if(targetGame)
+	{
+		for(int j = 0; j < MAXCLIENTS_PER_GAME; j++)
+		{
+			if(targetGame->clients[j] == c_in)
+			{
+				std::cout << "Removing client " << c_in << " from game" << std::endl;
+				targetGame->clients[j]  = 0;
+				//TODO: Remove player entities too
 				return 1;
 			}
 		}
 	}
 	std::cout << "Didn't find client in any games!" << std::endl;
-
+	return 0;
 }
 
 int join_client_to_game(SOCKET c_in, GameState* gameList)
@@ -92,6 +138,14 @@ int join_client_to_game(SOCKET c_in, GameState* gameList)
 					//Send success message to client
 					status.status_msg = JOIN_OK;
 					res = send(c_in, (char*)&status, sizeof(StatusPacket), 0);
+					if(!res)
+					{
+						std::cout << "Failed to send join status to client" << std::endl;
+						return 0;
+					}
+					//Now send the list of entities we have for this game object.
+					set_and_send_init_entities(c_in, gameList);
+
 					return 1;
 				}
 			}
@@ -101,6 +155,11 @@ int join_client_to_game(SOCKET c_in, GameState* gameList)
 	status.status_msg = JOIN_FAIL;
 	res = send(c_in, (char*)&status, sizeof(StatusPacket), 0);
 	return 0;
+}
+
+void dispatch_client_data_call(SOCKET c_in, GameState* games)
+{
+
 }
 
 #ifdef _WIN32
@@ -185,6 +244,7 @@ int handle_client_event(SOCKET client_socket, GameState* games)
 	else
 	{
 		//Call a function based on what we got
+		dispatch_client_data_call(client_socket, games);
 		return 0;
 	}
 
@@ -224,6 +284,8 @@ int main(int argc, char* argv[])
 		currentGames[i].curState = STOPPED;
 		currentGames[i].serverTicks = 0;
 		currentGames[i].clientCount = 0;
+		currentGames[i].entityCount = 0;
+		currentGames[i].ents = new std::list<st_entity_info>();
 		for(int j = 0; j < MAXCLIENTS_PER_GAME; j++)
 		{
 			currentGames[i].clients[j] = 0;

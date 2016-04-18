@@ -57,7 +57,32 @@ SOCKET connect_to_game()
 
 #endif
 
-int JoinGame(EntityList* playerEntities)
+st_entity_info* GetEntities(SOCKET c_in, unsigned int* entityCount)
+{
+	//Get the header
+	MessageHeader entHeader;
+	st_entity_info* ents;
+
+	int res = recv(c_in, (char*)&entHeader, sizeof(entHeader), 0);
+	//Read the header and malloc a list of entities the appropriate size
+	if(!res)
+	{
+		std::cout << "Failed to get list of entities" << std::endl;
+		return 0;
+	}
+
+	ents = (st_entity_info*)malloc(entHeader.payloadLength);
+	unsigned int data_recvd = recv(c_in, (char*)ents, entHeader.payloadLength, 0);
+	while(data_recvd != entHeader.payloadLength)
+	{
+		data_recvd += recv(c_in, (char*)(ents + data_recvd), entHeader.payloadLength - data_recvd, 0);
+	}
+
+	*entityCount = entHeader.entityCount;
+	return ents;
+}
+
+int JoinGame(st_entity_info** playerEntities, unsigned int* entityCount)
 {
 	//Attempt to join default server host and get player entities.
 	//If a failure message is recieved, just dont give a model I suppose
@@ -84,6 +109,14 @@ int JoinGame(EntityList* playerEntities)
 	else
 	{
 		std::cout << "Failed to join game." << std::endl;
+		return 0;
+	}
+
+	//Assume the server will now send us a list of entities
+	*(playerEntities) = GetEntities(mySocket, entityCount);
+
+	if(!(*playerEntities))
+	{
 		return 0;
 	}
 

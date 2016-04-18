@@ -164,12 +164,15 @@ typedef struct {
 	GLuint VBO;
 } st_entity_model;
 
-typedef struct { 
+typedef struct {
 	glm::vec3 position;
 	glm::vec3 scale;
 	glm::vec3 rotation;
-
 	st_collision_node collider;
+} st_entity_info;
+
+typedef struct { 
+	st_entity_info info;
 	st_entity_model *model;
 
 } st_entity;

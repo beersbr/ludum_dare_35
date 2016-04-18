@@ -31,7 +31,9 @@ glm::vec3 LIGHT_POSITION;
 
 int main(int argc, char* argv[]) {
 
-	EntityList* playerEntities = (EntityList*)malloc(sizeof(EntityList) * MAXCLIENTS_PER_GAME);
+	std::list<st_entity> playerEntities;
+	st_entity_info* net_entities = 0;
+	unsigned int net_ent_count = 0;
 
 	if(SDL_Init(SDL_INIT_EVERYTHING) < 0)
 	{
@@ -134,22 +136,22 @@ int main(int argc, char* argv[]) {
 
 	st_entity wallBottom = {};
 	wallBottom.model     = &boxModelOrange;
-	wallBottom.scale     = glm::vec3{160.f, 10.f, 10.f};
-	wallBottom.position  = glm::vec3{0.f, 5.f, 80.f};
+	wallBottom.info.scale     = glm::vec3{160.f, 10.f, 10.f};
+	wallBottom.info.position  = glm::vec3{0.f, 5.f, 80.f};
 	CreateCollisionLine(&wallBottom, false, glm::vec3{-80.f, 0.f, 80.f}, glm::vec3{80.f, 0.f, 80.f});
 
 	st_entity wallTop = {};
 	wallTop.model     = &boxModelOrange;
-	wallTop.scale     = glm::vec3{160.f, 10.f, 10.f};
-	wallTop.position  = glm::vec3{0.f, 5.f, -80.f};
+	wallTop.info.scale     = glm::vec3{160.f, 10.f, 10.f};
+	wallTop.info.position  = glm::vec3{0.f, 5.f, -80.f};
 	CreateCollisionLine(&wallTop, false, glm::vec3{-80.f, 0.f, -80.f}, glm::vec3{80.f, 0.f, -80.f});
 
 	st_entity grid = {};
 	grid.model     = &gridModel;
-	grid.scale     = glm::vec3{40.f, 40.f, 40.f};
+	grid.info.scale     = glm::vec3{40.f, 40.f, 40.f};
 
 	//Get player entities from server
-	int join_status = JoinGame(playerEntities);
+	int join_status = JoinGame(&net_entities, &net_ent_count);
 	if(!join_status)
 	{
 		//Couldn't join a game, we can control what we want here, but quit for now
@@ -157,12 +159,29 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 	//Set up our player entities from the list.
-
+	/*
 	st_entity player = {};
 	player.model     = &boxModel;
 	player.scale     = glm::vec3{20.f, 20.f, 20.f};
 	player.position  = glm::vec3{0.f, 10.f, 0.f};
-	CreateCollisionSphere(&player, true, 10.f, glm::vec3{});
+	*/
+	//We need better serialization, but for now lets just assume they're all boxes
+	st_entity_info* tmp_ent = net_entities;
+
+	for(int i = 0; i < net_ent_count; i++)
+	{
+		//Create entities based on what we got
+		st_entity tmp = {};
+		tmp.model = &boxModel;
+		tmp.info.scale = tmp_ent->scale;
+		tmp.info.position = tmp_ent->position;
+		CreateCollisionSphere(&tmp, true, 10.f, glm::vec3{});
+		tmp_ent++;
+		playerEntities.push_back(tmp);
+	}
+
+	//For now, assume player is the one and only entity (for net testing)
+	st_entity player = playerEntities.front();
 
 	st_entity wallRight = {} ;
 	CreateWall(&wallRight, &boxModelOrange, true, glm::vec3{80.f, 0.f, 80.f}, glm::vec3{80.f, 0.f, -80.f});
@@ -288,11 +307,11 @@ int main(int argc, char* argv[]) {
 				}
 			}
 
-			std::cout << "\rpos: " << glm::to_string(player.position) << "  motion: " << glm::to_string(motion) << "   FrameTime: " << frameTime;
+			std::cout << "\rpos: " << glm::to_string(player.info.position) << "  motion: " << glm::to_string(motion) << "   FrameTime: " << frameTime;
 
 			// this needs to be in the scene update
-			cameraMotion.x = player.position.x - camera.lookat.x;
-			cameraMotion.z = player.position.z - camera.lookat.z;
+			cameraMotion.x = player.info.position.x - camera.lookat.x;
+			cameraMotion.z = player.info.position.z - camera.lookat.z;
 
 			cameraMotion /= 5.f;
 
@@ -302,8 +321,8 @@ int main(int argc, char* argv[]) {
 			glm::vec3 acceleration = -glm::normalize(glm::vec3{cameraDirection.x, 0.f, cameraDirection.z}) * (forwardPower * frameTime);
 			acceleration += -glm::normalize(glm::rotate(glm::vec3{cameraDirection.x, 0.f, cameraDirection.z}, Radians(90.f), glm::vec3{0.f, 1.f, 0.f})) * (lateralPower * frameTime);
 			playerVelocity += acceleration;
-			player.position += playerVelocity;
-			player.rotation = glm::vec3{0.f, -Radians(playerRotation += turnMotion), 0.f};
+			player.info.position += playerVelocity;
+			player.info.rotation = glm::vec3{0.f, -Radians(playerRotation += turnMotion), 0.f};
 
 			playerVelocity *= 0.92f;
 

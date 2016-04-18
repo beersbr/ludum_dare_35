@@ -1,6 +1,7 @@
 #ifndef _NET_H
 #define _NET_H
 #pragma once
+#include <list>
 #include "../shared.h"
 
 #define UPDATE_RATE 100
@@ -22,18 +23,22 @@ int init_winsock();
 
 enum GAME_STATES {STARTED=1, STOPPED};
 enum STATUS_MESSAGE { JOIN_OK=1, JOIN_FAIL};
+enum CLIENT_REQ {
+	ENTITY_UPDATE = 1,
+	GAME_START,
+};
 
-typedef struct entity_list
+typedef struct message_header
 {
-	st_entity* ent;
-	st_entity* prev;
-	st_entity* next;
-} EntityList;
+	CLIENT_REQ reqType;
+	unsigned int tick;
+	unsigned int entityCount;
+	unsigned int payloadLength;
+} MessageHeader;
 
 typedef struct entity_update
 {
-	unsigned int tick;
-	unsigned int entityCount;
+	MessageHeader header;
 	void* update_data; //This might have to be more defined later. but probably a position and orientation vector
 } EntityUpdate;
 
@@ -48,13 +53,15 @@ typedef struct game_state
 	//Maintains list of entities and tick count.
 	GAME_STATES curState;
 	unsigned int serverTicks;
-	EntityList ents;
-	int clientCount;
+	unsigned int entityCount;
+	unsigned int clientCount;
+	std::list<st_entity_info>* ents;
 	SOCKET clients[MAXCLIENTS_PER_GAME];
 
 } GameState;
 
-int JoinGame(EntityList* playerEntities);
+int JoinGame(st_entity_info** playerEntities);
+st_entity* GetEntities();
 SOCKET connect_to_game();
 
 #endif
