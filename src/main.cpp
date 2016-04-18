@@ -181,7 +181,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	//For now, assume player is the one and only entity (for net testing)
-	st_entity player = playerEntities.front();
+	st_entity& player = playerEntities.front();
 
 	st_entity wallRight = {} ;
 	CreateWall(&wallRight, &boxModelOrange, true, glm::vec3{80.f, 0.f, 80.f}, glm::vec3{80.f, 0.f, -80.f});
@@ -214,7 +214,14 @@ int main(int argc, char* argv[]) {
 	AddToScene(&scene, &wallBottom);
 	AddToScene(&scene, &wallTop);
 	AddToScene(&scene, &grid);
-	AddToScene(&scene, &player);
+	//AddToScene(&scene, &player); //Add Player(s) to scene
+	//Add any other entities to the scene
+	for(std::list<st_entity>::const_iterator iterator = playerEntities.begin();
+		iterator != playerEntities.end();
+		++iterator)
+	{
+		AddToScene(&scene,(st_entity*)&(*iterator));
+	}
 
 	float power       = 0.f;
 	float powerChange = 100.f; // per second

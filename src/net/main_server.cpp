@@ -4,6 +4,12 @@
 
 typedef int (*handle_callback)(void*, SOCKET);
 
+glm::vec3 position_matrix[] = { glm::vec3{ 0.f,   0.f,    0.f},
+								glm::vec3{-40.f,  0.f,   -40.f},
+						        glm::vec3{-40.f,  0.f,    40.f},
+						        glm::vec3{ 40.f,  0.f,   -40.f},
+						        glm::vec3{ 40.f,  0.f,    40.f} };
+
 int test_handle_client(SOCKET c_in)
 {
 	std::cout << "[=] Made it to client handle with the data" << std::endl;
@@ -62,7 +68,7 @@ void set_and_send_init_entities(SOCKET c_in, GameState* gameList)
 	st_entity_info tmp_player = {};
 	//player.model     = &boxModel;
 	tmp_player.scale     = glm::vec3{20.f, 20.f, 20.f};
-	tmp_player.position  = glm::vec3{0.f, (10.f * targetGame->clientCount), 0.f};
+	tmp_player.position  = position_matrix[targetGame->clientCount];
 
 	targetGame->ents->push_back(tmp_player);
 	targetGame->entityCount++;
