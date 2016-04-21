@@ -12,6 +12,8 @@
 
 #include <iostream>
 
+#include "hogl.h"
+
 #define Radians(n) ((n)*(3.14159f/180.f))
 #define Degrees(n) ((n)*(180.f/3.14159f))
 
@@ -157,7 +159,7 @@ typedef struct {
 	int vertice_count;
 	int texture_id;
 
-	GLuint shader_id;
+	st_shader *shader;
 	GLenum draw_method;
 
 	GLuint VAO;
@@ -183,7 +185,7 @@ typedef struct {
 	int entity_count;
 } st_scene;
 
-void CreateModel(st_entity_model *model, GLfloat *vertices, int vertices_size, glm::vec3 color1, GLuint shader_id);
+void CreateModel(st_entity_model *model, GLfloat *vertices, int vertices_size, glm::vec3 color1, st_shader *shader);
 void DrawEntity(st_entity *entity, glm::mat4 projection, glm::mat4 view, glm::vec3 light_pos);
 
 void CreateCollisionSphere(st_entity *entity, bool movable,  float radius, glm::vec3 position);

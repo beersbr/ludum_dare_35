@@ -1,5 +1,56 @@
 #include "hogl.h"
 
+void GetOrCreateUniform(st_shader *shader, char *name, st_shader_value *value) {
+	GetOrCreateVariable(shader->uniforms, &shader->uniforms_count, name, value);
+}
+
+void GetOrCreateVariable(st_shader_value *variables, int *variables_count, char *name, st_shader_value *value) {
+	for(int i = 0; i < *variables_count; ++i) {
+		if(strncmp(variables[i].name, name, MAX_SHADER_VARIABLE_NAME_LENGTH) == 0) {
+			value = &(variables[i]);
+			break;
+		}
+	}
+
+	if(*variables_count + 1 < MAX_SHADER_UNIFORMS) {
+		value = (variables + *variables_count);
+		memcpy(value->name, name, MAX_SHADER_VARIABLE_NAME_LENGTH);
+		*variables_count += 1;
+	}
+}
+
+void SetShaderUniformFloat(st_shader *shader, char *name, float value) {
+
+}
+
+void SetShaderUniformInt(st_shader *shader, char *name, int value) {
+
+}
+
+void SetShaderUniformUnsignedInt(st_shader *shader, char *name, unsigned int value) {
+
+}
+
+void SetShaderUniformVec2(st_shader *shader, char *name, float value[2]) {
+
+}
+
+void SetShaderUniformVec3(st_shader *shader, char *name, float value[3]) {
+
+}
+
+void SetShaderUniformVec4(st_shader *shader, char *name, float value[4]) {
+
+}
+
+void SetShaderUniformMatrix3(st_shader *shader, char *name, float value[9]) {
+
+}
+
+void SetShaderUniformMatrix4(st_shader *shader, char *name, float value[16]) {
+
+}
+
 // NOTE(Brett):This function creates a block of memory!!!
 void ReadFile(char **fileContents, char *filename) {
 	#ifdef DEBUG
@@ -61,37 +112,37 @@ void CompileShader(GLuint *shader, char *shaderSource) {
 }
 
 
-void CreateShaderProgram(GLuint *shaderProgram, char *vertexShaderSource, char *fragmentShaderSource) {
+void CreateShaderProgram(st_shader *shader, char *vertexShaderSource, char *fragmentShaderSource) {
 	#ifdef DEBUG
-	assert(shaderProgram);
+	assert(shader);
 	assert(vertexShaderSource);
 	assert(fragmentShaderSource);
 	#endif
 
-	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER),
-		fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	GLuint vertexShader   = glCreateShader(GL_VERTEX_SHADER),
+		   fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 
 	CompileShader(&vertexShader, vertexShaderSource);
 	CompileShader(&fragmentShader, fragmentShaderSource);
 
-	*shaderProgram = glCreateProgram();
-	glAttachShader(*shaderProgram, vertexShader);
-	glAttachShader(*shaderProgram, fragmentShader);
+	shader->id = glCreateProgram();
+	glAttachShader(shader->id, vertexShader);
+	glAttachShader(shader->id, fragmentShader);
 
-	glLinkProgram(*shaderProgram);
+	glLinkProgram(shader->id);
 
 	GLint isLinked;
-	glGetProgramiv(*shaderProgram, GL_LINK_STATUS, &isLinked);
+	glGetProgramiv(shader->id, GL_LINK_STATUS, &isLinked);
 	if(false == isLinked)
 	{
 		int logLength = 0;
-		glGetProgramiv(*shaderProgram, GL_INFO_LOG_LENGTH, &logLength);
+		glGetProgramiv(shader->id, GL_INFO_LOG_LENGTH, &logLength);
 		char *infoLog = (char *)malloc(sizeof(char) * logLength);
 
 		std::cerr << "Shader linker error: " << std::endl << infoLog << std::endl;
 		free(infoLog);
 
-		*shaderProgram = 0;
+		shader->id = 0;
 		return;
 	}
 

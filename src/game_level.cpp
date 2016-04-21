@@ -5,7 +5,7 @@ void CreateWall(st_entity *entity, st_entity_model *model, bool collidable, glm:
 	glm::vec3 center = p0 + ((p1 - p0) / 2.f);
 	float size = glm::length(center - p0);
 
-	entity->model    = model;
+	entity->model         = model;
 	entity->info.scale    = glm::vec3{size*2.f, 10.f, 10.f};
 	entity->info.position = center;
 	

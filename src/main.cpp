@@ -95,9 +95,9 @@ int main(int argc, char* argv[]) {
 	ReadFile(&vertexShader, "shaders/flat_shader.vs");
 	ReadFile(&fragmentShader, "shaders/flat_shader.fs");
 
-	GLuint shader;
+	st_shader shader;
 	CreateShaderProgram(&shader, vertexShader, fragmentShader);
-	glUseProgram(shader);
+	glUseProgram(shader.id);
 
 	PROJECTION = glm::ortho(-WINDOW_WIDTH/2.f,
 	                        WINDOW_WIDTH/2.f,
@@ -122,69 +122,70 @@ int main(int argc, char* argv[]) {
 	// load models
 	st_entity_model gridModel = {};	
 	gridModel.draw_method = GL_LINES;
-	CreateModel(&gridModel, GRID_VERTICES_5, sizeof(GRID_VERTICES_5)/sizeof(GLfloat), glm::vec3{1.f, 1.f, 1.f}, shader);
+	CreateModel(&gridModel, GRID_VERTICES_5, sizeof(GRID_VERTICES_5)/sizeof(GLfloat), glm::vec3{1.f, 1.f, 1.f}, &shader);
 
 	st_entity_model boxModel = {};
 	boxModel.draw_method = GL_TRIANGLES;
-	CreateModel(&boxModel, BOX_VERTICES, sizeof(BOX_VERTICES)/sizeof(GLfloat), glm::vec3{0.f, 0.5f, 1.0f}, shader);
+	CreateModel(&boxModel, BOX_VERTICES, sizeof(BOX_VERTICES)/sizeof(GLfloat), glm::vec3{0.f, 0.5f, 1.0f}, &shader);
 
 	st_entity_model boxModelOrange = {};
 	boxModelOrange.draw_method = GL_TRIANGLES;
-	CreateModel(&boxModelOrange, BOX_VERTICES, sizeof(BOX_VERTICES)/sizeof(GLfloat), glm::vec3{1.f, 0.5f, 0.0f}, shader);
+	CreateModel(&boxModelOrange, BOX_VERTICES, sizeof(BOX_VERTICES)/sizeof(GLfloat), glm::vec3{1.f, 0.5f, 0.0f}, &shader);
 
 	// create entities
 
-	st_entity wallBottom = {};
-	wallBottom.model     = &boxModelOrange;
-	wallBottom.info.scale     = glm::vec3{160.f, 10.f, 10.f};
-	wallBottom.info.position  = glm::vec3{0.f, 5.f, 80.f};
+	st_entity wallBottom     = {};
+	wallBottom.model         = &boxModelOrange;
+	wallBottom.info.scale    = glm::vec3{160.f, 10.f, 10.f};
+	wallBottom.info.position = glm::vec3{0.f, 5.f, 80.f};
 	CreateCollisionLine(&wallBottom, false, glm::vec3{-80.f, 0.f, 80.f}, glm::vec3{80.f, 0.f, 80.f});
 
-	st_entity wallTop = {};
-	wallTop.model     = &boxModelOrange;
-	wallTop.info.scale     = glm::vec3{160.f, 10.f, 10.f};
-	wallTop.info.position  = glm::vec3{0.f, 5.f, -80.f};
+	st_entity wallTop     = {};
+	wallTop.model         = &boxModelOrange;
+	wallTop.info.scale    = glm::vec3{160.f, 10.f, 10.f};
+	wallTop.info.position = glm::vec3{0.f, 5.f, -80.f};
 	CreateCollisionLine(&wallTop, false, glm::vec3{-80.f, 0.f, -80.f}, glm::vec3{80.f, 0.f, -80.f});
 
-	st_entity grid = {};
-	grid.model     = &gridModel;
-	grid.info.scale     = glm::vec3{40.f, 40.f, 40.f};
+	st_entity grid  = {};
+	grid.model      = &gridModel;
+	grid.info.scale = glm::vec3{40.f, 40.f, 40.f};
 
 	//Get player entities from server
-	int join_status = JoinGame(&net_entities, &net_ent_count);
-	if(!join_status)
-	{
-		//Couldn't join a game, we can control what we want here, but quit for now
-		std::cout << "Netcode error from JoinGame: Couldn't join a game" << std::endl;
-		return 1;
-	}
+	// int join_status = JoinGame(&net_entities, &net_ent_count);
+	// if(!join_status)
+	// {
+	// 	//Couldn't join a game, we can control what we want here, but quit for now
+	// 	std::cout << "Netcode error from JoinGame: Couldn't join a game" << std::endl;
+	// 	return 1;
+	// }
 	//Set up our player entities from the list.
-	/*
-	st_entity player = {};
-	player.model     = &boxModel;
-	player.scale     = glm::vec3{20.f, 20.f, 20.f};
-	player.position  = glm::vec3{0.f, 10.f, 0.f};
-	*/
+	
+	st_entity player     = {};
+	player.model         = &boxModel;
+	player.info.scale    = glm::vec3{20.f, 20.f, 20.f};
+	player.info.position = glm::vec3{0.f, 10.f, 0.f};
+	CreateCollisionSphere(&player, true, 10.f, glm::vec3{0.f, 0.f, 0.f});
+	
 	//We need better serialization, but for now lets just assume they're all boxes
-	st_entity_info* tmp_ent = net_entities;
+	// st_entity_info* tmp_ent = net_entities;
 
-	for(int i = 0; i < net_ent_count; i++)
-	{
-		//Create entities based on what we got
-		st_entity tmp = {};
-		tmp.model = &boxModel;
-		tmp.info.entId = tmp_ent->entId;
-		tmp.info.scale = tmp_ent->scale;
-		tmp.info.position = tmp_ent->position;
-		CreateCollisionSphere(&tmp, true, 10.f, glm::vec3{});
-		tmp_ent++;
-		playerEntities.push_back(tmp);
-	}
+	// for(int i = 0; i < net_ent_count; i++)
+	// {
+	// 	//Create entities based on what we got
+	// 	st_entity tmp = {};
+	// 	tmp.model = &boxModel;
+	// 	tmp.info.entId = tmp_ent->entId;
+	// 	tmp.info.scale = tmp_ent->scale;
+	// 	tmp.info.position = tmp_ent->position;
+	// 	CreateCollisionSphere(&tmp, true, 10.f, glm::vec3{});
+	// 	tmp_ent++;
+	// 	playerEntities.push_back(tmp);
+	// }
 
 	//For now, assume player is the one and only entity (for net testing)
-	st_entity& player = playerEntities.front();
+	// st_entity& player = playerEntities.front();
 
-	st_entity wallRight = {} ;
+	st_entity wallRight = {};
 	CreateWall(&wallRight, &boxModelOrange, true, glm::vec3{80.f, 0.f, 80.f}, glm::vec3{80.f, 0.f, -80.f});
 	
 	st_scene scene;
@@ -215,14 +216,17 @@ int main(int argc, char* argv[]) {
 	AddToScene(&scene, &wallBottom);
 	AddToScene(&scene, &wallTop);
 	AddToScene(&scene, &grid);
+	AddToScene(&scene, &player);
+
+
 	//AddToScene(&scene, &player); //Add Player(s) to scene
 	//Add any other entities to the scene
-	for(std::list<st_entity>::const_iterator iterator = playerEntities.begin();
-		iterator != playerEntities.end();
-		++iterator)
-	{
-		AddToScene(&scene,(st_entity*)&(*iterator));
-	}
+	// for(std::list<st_entity>::const_iterator iterator = playerEntities.begin();
+	// 	iterator != playerEntities.end();
+	// 	++iterator)
+	// {
+	// 	AddToScene(&scene,(st_entity*)&(*iterator));
+	// }
 
 	float power       = 0.f;
 	float powerChange = 100.f; // per second
@@ -336,7 +340,6 @@ int main(int argc, char* argv[]) {
 			player.info.rotation = glm::vec3{0.f, -Radians(playerRotation += turnMotion), 0.f};
 
 			playerVelocity *= 0.92f;
-
 
 			LIGHT_POSITION = glm::normalize(camera.eye - camera.lookat) * 50.f + camera.lookat;
 

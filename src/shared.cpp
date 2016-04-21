@@ -13,7 +13,7 @@
 // } st_entity_model;
 
 // NOTE(brett): should be done with triangles
-void CreateModel(st_entity_model *model, GLfloat *vertices, int vertices_size, glm::vec3 color1, GLuint shader_id) {
+void CreateModel(st_entity_model *model, GLfloat *vertices, int vertices_size, glm::vec3 color1, st_shader *shader) {
 
 	// NOTE(brett): get vertices 
 	int model_vertex_count = vertices_size/3;
@@ -58,9 +58,7 @@ void CreateModel(st_entity_model *model, GLfloat *vertices, int vertices_size, g
 		}
 	}
 
-
-
-	model->shader_id = shader_id;
+	model->shader = shader;
 
 	model->vertice_count = model_vertex_count;
 
@@ -84,11 +82,11 @@ void CreateModel(st_entity_model *model, GLfloat *vertices, int vertices_size, g
 void DrawEntity(st_entity *entity, glm::mat4 projection, glm::mat4 view,  glm::vec3 light_pos) {
 
 	glBindVertexArray(entity->model->VAO);
-	glUseProgram(entity->model->shader_id);
+	glUseProgram(entity->model->shader->id);
 
-	GLint projectionLocation = glGetUniformLocation(entity->model->shader_id, "projection");
-	GLint viewLocation = glGetUniformLocation(entity->model->shader_id, "view");
-	GLint lightLocation = glGetUniformLocation(entity->model->shader_id, "light");
+	GLint projectionLocation = glGetUniformLocation(entity->model->shader->id, "projection");
+	GLint viewLocation = glGetUniformLocation(entity->model->shader->id, "view");
+	GLint lightLocation = glGetUniformLocation(entity->model->shader->id, "light");
 
 	glUniformMatrix4fv(projectionLocation, 1, false, (GLfloat*)&projection[0]);
 	glUniformMatrix4fv(viewLocation, 1, false, (GLfloat*)&view[0]);
@@ -103,7 +101,7 @@ void DrawEntity(st_entity *entity, glm::mat4 projection, glm::mat4 view,  glm::v
 
 	model = glm::scale(model, entity->info.scale);
 
-	GLint modelLocation = glGetUniformLocation(entity->model->shader_id, "model");
+	GLint modelLocation = glGetUniformLocation(entity->model->shader->id, "model");
 	glUniformMatrix4fv(modelLocation, 1, false, (GLfloat*)&model);
 
 	glDrawArrays(entity->model->draw_method, 0, entity->model->vertice_count);
@@ -246,7 +244,6 @@ void UpdateAndRenderScene(st_scene *scene, glm::mat4 projection, glm::mat4 view)
 			}
 		}
 		
-
 		DrawEntity(scene->entities[i], projection, view, light_pos);
 	}
 }
